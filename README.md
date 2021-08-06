@@ -12,12 +12,18 @@ Now including these functions:
 - resize batch img
 - generate pure color img to some experience
 
+### Folder
+
+- extract img from folder
+- clean one folder from another
+
 ### Video
 
 - get video info
 - video 2 h264
 - resize video
 - video2frame & frame2video
+- video crop & reverse
 
 ### Compress
 

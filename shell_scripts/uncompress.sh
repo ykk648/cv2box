@@ -27,7 +27,7 @@ elif [ $1 = "zip" ]; then
 elif [ $1 = "7zip" ]; then
   for i in *.zip; do
     if [ -n "$3" ]; then
-      7z x "$i" -p$3 -ao s
+      7z x "$i" -p$3 -aos
     else
       7z x "$i"
     fi

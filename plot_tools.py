@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 
 import os
 n_list = []
-for f in os.listdir('/workspace/151_cluster/nfs/dataset/deepfacelab/material/待处理/face512aligned'):
+for f in os.listdir(''):
     f_p = os.path.join('/workspace/151_cluster/nfs/dataset/deepfacelab/material/待处理/face512aligned', f)
     for ff in os.listdir(f_p):
         f_p_p = os.path.join(f_p, ff)

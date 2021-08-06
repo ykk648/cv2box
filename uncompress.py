@@ -5,7 +5,7 @@ from utils import oscall
 
 
 def get_shell(dir_path, shell_name):
-    oscall('cp ./shell_scripts/{}.sh {}'.format(shell_name, dir_path))
+    oscall('cp ./shell_scripts/{}.sh \'{}\''.format(shell_name, dir_path))
     # shutil.copyfile('./shell_scripts/uncompress.sh', file_path + '/uncompress.sh')
 
 
@@ -29,7 +29,7 @@ def batch_uncompress(dir_path, pwd, pwd_flag=None):
 
 
 if __name__ == '__main__':
-    p = '/workspace/151_cluster/nfs/dataset/deepfacelab/material/model_girl/写真大家庭'
+    p = ''
     # get_shell(p, 'uncompress')
     # destroy_shell(p, 'uncompress')
     batch_uncompress(p, '',pwd_flag='密码')
