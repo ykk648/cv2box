@@ -35,6 +35,10 @@ Now including these functions:
 
 ## Version
 
+### 0.0.3
+
+- add video crop & reverse using ffmpeg
+
 ### 0.0.2
 
 - add batch uncompress shell script
