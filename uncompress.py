@@ -1,11 +1,11 @@
 import os
 import shutil
 from tqdm import tqdm
-from utils import oscall
+from utils import os_call
 
 
 def get_shell(dir_path, shell_name):
-    oscall('cp ./shell_scripts/{}.sh \'{}\''.format(shell_name, dir_path))
+    os_call('cp ./shell_scripts/{}.sh \'{}\''.format(shell_name, dir_path))
     # shutil.copyfile('./shell_scripts/uncompress.sh', file_path + '/uncompress.sh')
 
 
@@ -20,11 +20,11 @@ def batch_uncompress(dir_path, pwd, pwd_flag=None):
         if os.path.isdir(f_p):
             if f_p.find(pwd_flag) > 0:
                 get_shell(f_p, 'uncompress')
-                oscall('cd {} && sh uncompress.sh 7z ./ 202166'.format(f_p))
+                os_call('cd {} && sh uncompress.sh 7z ./ 202166'.format(f_p))
                 destroy_shell(f_p, 'uncompress')
             else:
                 get_shell(f_p, 'uncompress')
-                oscall('cd {} && sh uncompress.sh tar ./'.format(f_p))
+                os_call('cd {} && sh uncompress.sh tar ./'.format(f_p))
                 destroy_shell(f_p, 'uncompress')
 
 

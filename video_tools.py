@@ -1,9 +1,12 @@
 import os
+import re
+
 import cv2
 import shutil
 from tqdm import tqdm
-from .utils import oscall
+from .utils import os_call
 import numpy as np
+from moviepy.editor import VideoFileClip
 
 
 def decode_fourcc(cc):
@@ -33,18 +36,34 @@ class VideoTools:
                                                                           size))
 
     def video_2_h264(self, inplace=True):
-        # ffmpeg -i "xx.avi" -vcodec h264 "xx.mp4"
         if not inplace:
-            oscall('ffmpeg -i {} -vcodec h264 {}'.format(self.video_path,
-                                                         self.video_path.replace(self.suffix, '_h264_out.mp4')))
+            os_call('ffmpeg -i {} -vcodec h264 {}'.format(self.video_path,
+                                                          self.video_path.replace(self.suffix, '_h264_out.mp4')))
         else:
-            # print(self.extension)
             temp_p = self.video_path.replace(self.suffix, '_temp_copy.mp4')
             video_path_new = self.video_path.replace(self.suffix, '.mp4')
-            oscall(
+            os_call(
                 'mv {} {} && ffmpeg -i {} -vcodec h264 {} && rm {}'.format(self.video_path, temp_p, temp_p,
                                                                            video_path_new, temp_p))
-            # oscall()
+
+    def change_video_speed(self, speed=1):
+        assert 0.5 <= speed <= 2.0, 'Speed must between 0.5-2.0 .'
+        command = 'ffmpeg -i {} -filter_complex "[0:v]setpts={}*PTS[v];[0:a]atempo={}[a]" -map "[v]" -map "[a]" {}.mp4'.format(
+            self.video_path, 1 / speed, speed, self.video_dir + '/' + self.prefix + '_speed_out')
+        os_call(command)
+
+    @staticmethod
+    def concat_multi_video(video_dir):
+        file_list = []
+        for video_n in os.listdir(video_dir):
+            file_list.append('file \'{}\'\n'.format(video_n))
+        filelist_p = video_dir + '/filelist.txt'
+        with open(filelist_p, 'w') as f:
+            f.writelines(file_list)
+        command = 'ffmpeg -f concat -i {} -c copy {}.mp4 && rm {}'.format(filelist_p,
+                                                                          video_dir + '/' + 'multi_video_concat_result',
+                                                                          filelist_p)
+        os_call(command)
 
     def crop_video(self, rec_list: tuple, format='libx264'):
         """
@@ -57,7 +76,23 @@ class VideoTools:
         command = 'ffmpeg -y -i {} -filter:v "crop={}" -c:v {} -crf 17 -c:a copy {}.mp4'.format(self.video_path,
                                                                                                 size_str, format,
                                                                                                 self.video_dir + '/' + self.prefix + '_out')
-        oscall(command)
+        os_call(command)
+
+    def cut_video(self, start, last_time):
+        assert re.match(r"(\d{1,2}:\d{1,2}:\d{1,2})",
+                        start) is not None, 'The time format: start:00:00:15 last_time:00:00:15 etc.'
+        assert re.match(r"(\d{1,2}:\d{1,2}:\d{1,2})",
+                        last_time) is not None, 'The time format: start:00:00:15 last_time:00:00:15 etc.'
+        command = 'ffmpeg -y -ss {} -t {} -i {} -codec copy {}.mp4'.format(start, last_time, self.video_path,
+                                                                           self.video_dir + '/' + self.prefix + '_cut_out')
+        os_call(command)
+
+    def add_text(self, text, left_top_coord: tuple, fontsize=20):
+
+        command = 'ffmpeg -i {} -vf drawtext="text={}:x={}:y={}:fontsize={}:fontcolor=white:box=1:boxcolor=blue" -y {}.mp4'.format(
+            self.video_path, text, left_top_coord[0], left_top_coord[1], fontsize,
+            self.video_dir + '/' + self.prefix + '_add_text_out')
+        os_call(command)
 
     def reverse_crop_video(self, vp_overlay, rec_list: tuple, format='libx264rgb'):
         """
@@ -70,7 +105,7 @@ class VideoTools:
         command = 'ffmpeg -y -i {} -i {} -filter_complex overlay={} -c:v {} -c:a copy {}.mp4'.format(
             self.video_path, vp_overlay, size_str, format,
             self.video_dir + '/' + self.prefix + '_reverse_out')
-        oscall(command)
+        os_call(command)
 
     def show_video_cv(self):
         cap = cv2.VideoCapture(self.video_path)
@@ -85,7 +120,7 @@ class VideoTools:
         cap.release()
         cv2.destroyAllWindows()
 
-    def video_2_frame(self, interval=1, out_path=None):
+    def video_2_frame(self, interval=1., out_path=None):
         if out_path is None:
             save_path = self.video_path.split('.mp4')[0] + '/'
         else:
@@ -120,7 +155,7 @@ class VideoTools:
                 print('image of %s is saved' % save_name)
         video_capture.release()
 
-    def resize_video(self, inplace=False, out_size=(768, 1024)):
+    def resize_video(self, out_size=(768, 1024), inplace=False):
 
         out_p = self.video_path.replace(self.extension, '_{}x{}.mp4'.format(out_size[0], out_size[1]))
         if inplace:
@@ -142,39 +177,37 @@ class VideoTools:
         if inplace:
             os.system('rm {} &'.format(self.video_path))
 
-    # def avi2mp4(self):
-    #
-    #     # 指定写视频的格式, I420-avi, MJPG-mp4
-    #     videoWriter = cv2.VideoWriter(self.root_path.split('.')[0] + '.mp4', cv2.VideoWriter_fourcc(*'mp4v'),
-    #                                   fps, size)
-    #
-    #     # 读帧
-    #     success, frame = cap.read()
-    #
-    #     while success:
-    #         # cv2.waitKey(1000 / int(fps))  # 延迟
-    #         videoWriter.write(frame)  # 写视频帧
-    #         success, frame = cap.read()  # 获取下一帧
-
-    def video_concat(self, video_path_2, concat_mode=None):
+    def video_concat(self, video_path_2, concat_mode=None, copy_audio=True):
         if concat_mode is None:
             print('Need name concat_mode to \'vstack\' or \'hstack\' !')
             return
-
+        img = None
         reader1 = cv2.VideoCapture(self.video_path)
         video1_pre_path, video1_suffix = os.path.splitext(self.video_path)
-        video_out_p = video1_pre_path + '_out.mp4'
+        video_out_p = video1_pre_path + '_concat_out.mp4'
         if video1_suffix != '.mp4':
             print('Will output mp4 format video file !')
             print('Output path is {}'.format(video_out_p))
 
         reader2 = cv2.VideoCapture(video_path_2)
-        width = int(reader1.get(cv2.CAP_PROP_FRAME_WIDTH))
-        height = int(reader1.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        width1 = int(reader1.get(cv2.CAP_PROP_FRAME_WIDTH))
+        height1 = int(reader1.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        width2 = int(reader2.get(cv2.CAP_PROP_FRAME_WIDTH))
+        height2 = int(reader2.get(cv2.CAP_PROP_FRAME_HEIGHT))
+
+        if concat_mode == 'hstack':
+            assert height1 == height2, 'height1: {} height2: {}'.format(height1, height2)
+            output_size = (width1 + width2, height1)
+        elif concat_mode == 'vstack':
+            assert width1 == width2
+            output_size = (width1, height1 + height2)
+        else:
+            output_size = (width1 + width2, height1)
+
         writer = cv2.VideoWriter(video_out_p,
                                  cv2.VideoWriter_fourcc(*'mp4v'),  # (*"mp4v") for mp4 output
                                  30,  # fps
-                                 (width * 2, height))  # resolution
+                                 output_size)  # resolution
 
         if not reader1.isOpened() or not reader2.isOpened():
             print('video1 read {}, video2 read {}'.format(reader1.isOpened(), reader2.isOpened()))
@@ -187,16 +220,27 @@ class VideoTools:
             have_more_frame_2, frame2 = reader2.read()
             if not have_more_frame_2:
                 break
-            frame1 = cv2.resize(frame1, (width, height))
-            frame2 = cv2.resize(frame2, (width, height))
-            if concat_mode == 'hstack':
-                img = np.hstack((frame1, frame2))
-            elif concat_mode == 'vstack':
-                img = np.vstack((frame1, frame2))
-            else:
-                img = np.hstack((frame1, frame2))
+            # frame1 = cv2.resize(frame1, (width, height))
+            # frame2 = cv2.resize(frame2, (width, height))
+            try:
+                if concat_mode == 'hstack':
+                    img = np.hstack((frame1, frame2))
+                elif concat_mode == 'vstack':
+                    img = np.vstack((frame1, frame2))
+                else:
+                    img = np.hstack((frame1, frame2))
+            except ValueError:
+                print('Got ValueError')
             writer.write(img)
 
         writer.release()
         reader1.release()
         reader2.release()
+
+        if copy_audio:
+            video = VideoFileClip(self.video_path)
+            video_out = VideoFileClip(video_out_p)
+            video_out_audio = video_out.set_audio(video.audio)
+            video_out_audio.write_videofile(video_out_p.replace('_concat_out.mp4', '_concat_out_audio.mp4'))
+
+        return video_out_p

@@ -35,6 +35,11 @@ Now including these functions:
 
 ## Version
 
+### 0.0.4
+
+- more video process tools rewrite by ffmpeg
+- add ffhq face align
+
 ### 0.0.3
 
 - add video crop & reverse using ffmpeg
