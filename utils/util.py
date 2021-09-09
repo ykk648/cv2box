@@ -1,6 +1,7 @@
 import os
 import uuid
 import pickle
+import shutil
 
 
 def os_call(command):
@@ -21,4 +22,13 @@ def pickle_load(pickle_path):
         dummy = pickle.load(f)
     f.close()
     return dummy
+
+
+def get_my_dir():
+    dir_name, filename = os.path.split(os.path.abspath(__file__))
+    return dir_name
+
+
+def give_me_ai_power():
+    shutil.copytree('{}/../AI_power'.format(get_my_dir()), './AI_power')
 

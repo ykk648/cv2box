@@ -1,10 +1,10 @@
-from utils import os_call
+from utils import os_call, get_my_dir
 import shutil
 import os
 
 tem_dict = {
-    1: './code_templates/multiprocess_consumer.py',
-    2: './code_templates/multiprocess_consumer.py',
+    1: '{}/code_templates/multiprocess_consumer.py'.format(get_my_dir()),
+    2: '{}/code_templates/multiprocess_by_concurrent.py'.format(get_my_dir()),
 }
 
 
@@ -16,6 +16,12 @@ class GetTemplate:
         else:
             self.copy_template()
 
+    @staticmethod
+    def show():
+        help_msg = '1: multiprocess_consumer.py \n' \
+                   '2: multiprocess_by_concurrent.py \n'
+        print(help_msg)
+
     def copy_template(self):
         shutil.copyfile(tem_dict[self.t], os.getcwd())
-        # os_call('cp ./shell_scripts/{}.sh \'{}\''.format(shell_name, dir_path))
+

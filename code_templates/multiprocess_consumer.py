@@ -11,25 +11,20 @@ except ModuleNotFoundError:
 
 
 class Consumer(Process):
-    def __init__(self, queue_list: list, block=True, fps_counter=True):
+    def __init__(self, queue_list: list, block=True, fps_counter=False):
         super().__init__()
         self.queue_list = queue_list
         self.fps_counter = fps_counter
         self.block = block
         self.pid = os.getpid()
 
-        self.init_func()
-
-        print('init 1 consumer, pid is {}.'.format(self.pid))
-
-    def init_func(self):
         # add init here
-        pass
+
+        print('init consumer {}, pid is {}.'.format(self.__class__.__name__, self.pid))
 
     def forward_func(self, something_in):
-        # do your work here.
-        pass
 
+        # do your work here.
         something_out = something_in
         return something_out
 

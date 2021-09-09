@@ -4,6 +4,7 @@ import shutil
 from tqdm import tqdm
 import random
 from .utils import make_random_name
+from pathlib import Path
 
 
 class FolderTools:
@@ -19,26 +20,28 @@ class FolderTools:
             aim_p = os.path.join(self.root_path, f.replace(prefix1, prefix2))
             os.rename(f_p, aim_p)
 
-    def extract_imgs_from_folder(self, prefix1=None, img_num=0, random_flag=True):
-        if prefix1 is None:
-            prefix1 = ['jpg', 'png']
+    def extract_imgs_from_folder(self, img_num=0, patten=None, random_flag=True):
+        if patten is None:
+            patten = '*.jpg'
         count = 0
-        for r, d, f in os.walk(self.root_path):
-            if random_flag:
-                random.shuffle(f)
-            for ff in f:
-                if ff.split('.')[-1] in prefix1:
-                    f_p = os.path.join(r, ff)
-                    img = cv2.imread(f_p)
-                    if img is not None:
-                        aim_p = os.path.join(self.save_path, ff)
-                        if os.path.exists(aim_p):
-                            aim_p = os.path.join(self.save_path, make_random_name(ff))
-                        shutil.copy(f_p, aim_p)
-                        count += 1
-                        if count == img_num:
-                            print('copy {} imgs from {} to {}'.format(count, self.root_path, self.save_path))
-                            return
+        path = Path(self.root_path)
+        file_list = list(path.rglob(patten))
+        if random_flag:
+            random.shuffle(file_list)
+        for f_p in file_list:
+            # print(f_p)
+            img = cv2.imread(str(f_p))
+            if img is not None:
+                ff = f_p.name
+                aim_p = os.path.join(self.save_path, ff)
+                if os.path.exists(aim_p):
+                    aim_p = os.path.join(self.save_path, make_random_name(ff))
+                shutil.copy(f_p, aim_p)
+                count += 1
+                if count % 1000 == 0:
+                    print('copy {} imgs from {} to {}'.format(count, self.root_path, self.save_path))
+                if count == img_num:
+                    return
 
     def clean_one_folder_from_another(self, ):
         # clean root_p from save_p
@@ -49,4 +52,3 @@ class FolderTools:
         # print(len(f_list_remove))
         for f in tqdm(f_list_remove):
             os.remove(os.path.join(self.root_path, f))
-

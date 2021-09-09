@@ -28,12 +28,28 @@ class VideoTools:
         fourcc = cap.get(cv2.CAP_PROP_FOURCC)
         # 获得码率及尺寸
         fps = cap.get(cv2.CAP_PROP_FPS)
+        frame_number = cap.get(cv2.CAP_PROP_FRAME_COUNT)  # 视频文件的帧数
+        duration = frame_number / fps  # 帧速率/视频总帧数 是s
+
         size = (int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)),
                 int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)))
         cap.release()
         print(
             'video info:\nname: {}\nfourcc: {}\nfps: {}\nsize: {}'.format(self.video_name, decode_fourcc(fourcc), fps,
                                                                           size))
+
+    def show_video_cv(self):
+        cap = cv2.VideoCapture(self.video_path)
+        success = True
+        while success:
+            success, frame = cap.read()
+            cv2.namedWindow("First Frame", 0)
+            cv2.imshow('First Frame', frame)
+            # cv2.waitKey(99999)
+            if cv2.waitKey(100) == 27 or 0xFF == ord('q'):
+                break
+        cap.release()
+        cv2.destroyAllWindows()
 
     def video_2_h264(self, inplace=True):
         if not inplace:
@@ -78,13 +94,17 @@ class VideoTools:
                                                                                                 self.video_dir + '/' + self.prefix + '_out')
         os_call(command)
 
-    def cut_video(self, start, last_time):
+    def cut_video(self, start, last_time, accurate=False):
         assert re.match(r"(\d{1,2}:\d{1,2}:\d{1,2})",
                         start) is not None, 'The time format: start:00:00:15 last_time:00:00:15 etc.'
         assert re.match(r"(\d{1,2}:\d{1,2}:\d{1,2})",
                         last_time) is not None, 'The time format: start:00:00:15 last_time:00:00:15 etc.'
-        command = 'ffmpeg -y -ss {} -t {} -i {} -codec copy {}.mp4'.format(start, last_time, self.video_path,
-                                                                           self.video_dir + '/' + self.prefix + '_cut_out')
+        if not accurate:
+            command = 'ffmpeg -y -ss {} -t {} -i {} -codec copy {}.mp4'.format(start, last_time, self.video_path,
+                                                                               self.video_dir + '/' + self.prefix + '_cut_out')
+        else:
+            command = 'ffmpeg -y -ss {} -t {} -i {} {}.mp4'.format(start, last_time, self.video_path,
+                                                                   self.video_dir + '/' + self.prefix + '_cut_out')
         os_call(command)
 
     def add_text(self, text, left_top_coord: tuple, fontsize=20):
@@ -107,20 +127,7 @@ class VideoTools:
             self.video_dir + '/' + self.prefix + '_reverse_out')
         os_call(command)
 
-    def show_video_cv(self):
-        cap = cv2.VideoCapture(self.video_path)
-        success = True
-        while success:
-            success, frame = cap.read()
-            cv2.namedWindow("First Frame", 0)
-            cv2.imshow('First Frame', frame)
-            # cv2.waitKey(99999)
-            if cv2.waitKey(100) == 27 or 0xFF == ord('q'):
-                break
-        cap.release()
-        cv2.destroyAllWindows()
-
-    def video_2_frame(self, interval=1., out_path=None):
+    def video_2_frame(self, interval=1, out_path=None):
         if out_path is None:
             save_path = self.video_path.split('.mp4')[0] + '/'
         else:

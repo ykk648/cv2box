@@ -3,12 +3,14 @@ import os
 from PIL import Image
 import numpy as np
 import cv2
+
+
 # import imageio
 
 
 class ImgTools:
-    def __init__(self, img_path, root_path, save_path):
-        self.img_path = img_path
+    def __init__(self, root_path, save_path):
+        # self.img_path = img_path
         self.root_path = root_path
         self.save_path = save_path
         os.makedirs(self.save_path, exist_ok=True)
@@ -40,7 +42,7 @@ class ImgTools:
             img = np.array(img, dtype=np.uint8)[:, :, [2, 1, 0]]
             cv2.imwrite(os.path.join(self.save_path, f), img)
 
-    def resize_floder_img(self, aim_size, channel):
+    def resize_folder_img(self, aim_size, channel):
         for f in tqdm(os.listdir(self.root_path)):
             f_aim_p = os.path.join(self.save_path, f)
             if not os.path.exists(f_aim_p):
@@ -56,8 +58,9 @@ class ImgTools:
                 cv2.imwrite(f_aim_p, img)
                 # img.save(os.path.join(self.save_path, f))
 
-    def opencv_show(self, ):
-        img = cv2.imread(self.img_path)
+    @staticmethod
+    def cv_show(img_path):
+        img = cv2.imread(img_path)
         cv2.imshow("original", img)
         cv2.waitKey(0)
 
@@ -70,16 +73,3 @@ class ImgTools:
         bgr_img[:, :, 1] = color_[1]
         bgr_img[:, :, 2] = color_[2]
         cv2.imwrite(save_path + '/' + str(color_) + '.png', bgr_img)
-
-
-if __name__ == '__main__':
-    img_p = ''
-    root_p = '/workspace/data/waifu_anime/idx33_out_2'
-    save_p = '/workspace/data/waifu_anime/idx33_out_2_512'
-    img_tools = ImgTools(img_p, root_p, save_p)
-    # img_tools.alpha_channel_white()
-    # img_tools.convert_2_3channel()
-    # img_tools.resize_floder_img(aim_size=(512, 512), channel=3)
-    # blue 255,0,0
-    img_tools.gen_pure_color_img(aim_size=(512, 512), color_=(0, 0, 255),
-                                 save_path='/workspace/codes/stylegan2-ada-pytorch-main/out')

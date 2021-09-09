@@ -4,7 +4,23 @@ A gather of tools or funcs frequently using in my work.
 
 Now including these functions:
 
-### Img
+### AI power
+
+- FFHQ align face
+
+### code templates
+
+- multiprocess example by concurrent
+- multiprocess consumer example
+
+### shell scripts
+
+- rsync between different servers
+- batch uncompress script support different types(zip tar 7z etc.)
+
+### funcs u can call on py file
+
+#### Img
 
 - show img
 - set img alpha channel to 0
@@ -12,12 +28,12 @@ Now including these functions:
 - resize batch img
 - generate pure color img to some experience
 
-### Folder
+#### Folder
 
 - extract img from folder
 - clean one folder from another
 
-### Video
+#### Video
 
 - get video info
 - video 2 h264
@@ -25,11 +41,11 @@ Now including these functions:
 - video2frame & frame2video
 - video crop & reverse
 
-### Compress
+#### Compress
 
 - batch uncompress supporting multi suffix (zip 7z tar tar.gz)
 
-### Plot
+#### Plot
 
 - hist plot easy func
 
