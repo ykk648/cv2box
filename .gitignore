@@ -128,4 +128,4 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-AI_power/pretrain_models/*
+AI_power/pretrain_models/face_detect
