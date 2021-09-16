@@ -19,6 +19,6 @@ generate dataset list as follow formats:
 """
 
 if __name__ == '__main__':
-    test_path = ''
-    count_mean_std(test_path)
+    test_path = '/workspace/codes/mmclassification/data/fq_0911/'
+    # count_mean_std(test_path)
     gen_txt_from_path(test_path, img_format='jpg', train_ratio=0.8)
