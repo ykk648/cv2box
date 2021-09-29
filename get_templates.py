@@ -1,4 +1,4 @@
-from utils import os_call, get_my_dir
+from .utils import os_call, get_my_dir
 import shutil
 import os
 

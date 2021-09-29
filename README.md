@@ -6,11 +6,7 @@ more info and code example plz read [wiki](https://github.com/ykk648/cv2box/wiki
 
 Now including these functions:
 
-### AI power
-
-- FFHQ/mtcnn align face
-- arcface/curricularface infer
-- DeepLearning dataset preprocess scripts
+### AI power (move to [AI_power](https://github.com/ykk648/AI_power))
 
 ### code templates
 
