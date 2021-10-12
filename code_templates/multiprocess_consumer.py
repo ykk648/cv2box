@@ -58,7 +58,7 @@ class Consumer(Process):
             if self.fps_counter:
                 counter += 1
                 if (time.time() - start_time) > 10:
-                    fp("Consumer FPS: ", counter / (time.time() - start_time))
+                    fp("Consumer FPS: {}".format(counter / (time.time() - start_time)))
                     counter = 0
                     start_time = time.time()
 
