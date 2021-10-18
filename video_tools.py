@@ -190,6 +190,7 @@ class VideoTools:
             return
         img = None
         reader1 = cv2.VideoCapture(self.video_path)
+        fps = reader1.get(cv2.CAP_PROP_FPS)
         video1_pre_path, video1_suffix = os.path.splitext(self.video_path)
         video_out_p = video1_pre_path + '_concat_out.mp4'
         if video1_suffix != '.mp4':
@@ -213,7 +214,7 @@ class VideoTools:
 
         writer = cv2.VideoWriter(video_out_p,
                                  cv2.VideoWriter_fourcc(*'mp4v'),  # (*"mp4v") for mp4 output
-                                 30,  # fps
+                                 fps,  # fps
                                  output_size)  # resolution
 
         if not reader1.isOpened() or not reader2.isOpened():
