@@ -1,7 +1,7 @@
 ## cv2box - cv toolbox
 
 `
-pip install cv2box
+pip install cv2box==0.0.8
 `
 
 A gather of tools or funcs frequently using in my work.

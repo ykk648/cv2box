@@ -7,7 +7,7 @@ from .utils import make_random_name
 from pathlib import Path
 # import imagededup
 # from imagededup.methods import PHash
-from imagededup.methods import CNN
+# from imagededup.methods import CNN
 
 
 class FolderTools:
@@ -17,19 +17,19 @@ class FolderTools:
         if save_path is not None:
             os.makedirs(self.save_path, exist_ok=True)
 
-    def find_duplicates(self):
-        cnn_encoder = CNN()
-        duplicates_cnn = cnn_encoder.find_duplicates(image_dir=self.root_path, scores=True)
-        # print(len(duplicates_cnn))
-        already_name = []
-        for k, v in tqdm(duplicates_cnn.items()):
-            file_name = k
-            if file_name not in already_name:
-                shutil.copyfile(os.path.join(self.root_path, file_name), os.path.join(self.save_path, file_name))
-            already_name.append(file_name)
-            for vv in v:
-                already_name.append(vv[0])
-            already_name = list(set(already_name))
+    # def find_duplicates(self):
+    #     cnn_encoder = CNN()
+    #     duplicates_cnn = cnn_encoder.find_duplicates(image_dir=self.root_path, scores=True)
+    #     # print(len(duplicates_cnn))
+    #     already_name = []
+    #     for k, v in tqdm(duplicates_cnn.items()):
+    #         file_name = k
+    #         if file_name not in already_name:
+    #             shutil.copyfile(os.path.join(self.root_path, file_name), os.path.join(self.save_path, file_name))
+    #         already_name.append(file_name)
+    #         for vv in v:
+    #             already_name.append(vv[0])
+    #         already_name = list(set(already_name))
 
     def rename_folder_files(self, prefix1, prefix2):
         for f in tqdm(os.listdir(self.root_path)):
