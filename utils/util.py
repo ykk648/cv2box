@@ -2,6 +2,7 @@ import os
 import uuid
 import pickle
 import shutil
+import numpy as np
 
 
 def os_call(command):
@@ -32,3 +33,6 @@ def get_my_dir():
 def give_me_ai_power():
     shutil.copytree('{}/../AI_power'.format(get_my_dir()), './AI_power')
 
+
+def np_norm(x):
+    return (x - np.average(x)) / np.std(x)

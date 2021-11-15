@@ -1,5 +1,5 @@
 import numpy as np
-
+from utils.util import np_norm
 
 class CalDistance:
     def __init__(self, vector1, vector2):
@@ -8,3 +8,9 @@ class CalDistance:
 
     def euc(self):
         return np.sqrt(np.sum(np.square(self.vector1 - self.vector2)))
+
+    def euc_2(self):
+        return np.linalg.norm(self.vector1 - self.vector2)
+
+    def euc_norm(self):
+        return np.linalg.norm(np_norm(self.vector1) - (self.vector2))
