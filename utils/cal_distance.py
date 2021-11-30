@@ -1,6 +1,7 @@
 import numpy as np
 from utils.util import np_norm
 
+
 class CalDistance:
     def __init__(self, vector1, vector2):
         self.vector1 = vector1

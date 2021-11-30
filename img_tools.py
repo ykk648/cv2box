@@ -5,9 +5,6 @@ import numpy as np
 import cv2
 
 
-# import imageio
-
-
 class ImgTools:
     def __init__(self, root_path, save_path):
         # self.img_path = img_path
