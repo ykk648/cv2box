@@ -1,5 +1,5 @@
 import numpy as np
-from utils.util import np_norm
+from .util import np_norm
 
 
 class CalDistance:

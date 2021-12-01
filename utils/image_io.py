@@ -1,7 +1,7 @@
 # -- coding: utf-8 --
 # @Time : 2021/11/19
 # @Author : ykk648
-# @Project : https://github.com/ykk648/AI_power
+# @Project : https://github.com/ykk648/cv2box
 import cv2
 import numpy as np
 from PIL import Image
@@ -30,7 +30,8 @@ class CVImage:
         elif 'ten' in image_format:
             image_numpy = image_in[0].cpu().float().numpy()
             self.cv_image = (np.transpose(image_numpy, (1, 2, 0)) + 1) / 2.0 * 255.0
-        raise 'Can not find image_format ！'
+        else:
+            raise 'Can not find image_format ！'
 
     @property
     def rgb(self):
@@ -50,6 +51,14 @@ class CVImage:
         assert self.transform is not None, 'Use set_transform first !'
         img = self.transform(self.cv_image)
         return torch.unsqueeze(img, 0)
+
+    def resize(self, size):
+        if type(size) == tuple:
+            self.cv_image = cv2.resize(self.cv_image, size)
+        elif type(size) == int:
+            self.cv_image = cv2.resize(self.cv_image, (size, size))
+        else:
+            raise 'Check the size input !'
 
     def set_transform(self, transform=None):
         if not transform:
