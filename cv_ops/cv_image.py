@@ -7,6 +7,7 @@ import numpy as np
 from PIL import Image
 from torchvision import transforms
 import base64
+import io
 
 """
 skimage and pillow read image based uint8 and RGB mode
@@ -35,6 +36,8 @@ class CVImage:
             img_data = base64.b64decode(image_in[22:])
             img_array = np.frombuffer(img_data, np.uint8)
             self.cv_image = cv2.imdecode(img_array, 1)
+        elif 'byte' in image_format:
+            self.cv_image = cv2.imdecode(np.frombuffer(io.BytesIO(image_in).read(), np.uint8), 1)
         else:
             raise 'Can not find image_format ！'
 
