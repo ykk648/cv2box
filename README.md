@@ -12,6 +12,12 @@ Now including these functions:
 
 ### AI power (move to [AI_power](https://github.com/ykk648/AI_power))
 
+### cv ops
+
+- CVImage , a image class support multi format convert, usage: todo
+
+- CVQueue , A queue-like high-level class which can be used for two different python projects on same host machine.
+
 ### code templates
 
 - multiprocess example by concurrent

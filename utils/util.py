@@ -4,6 +4,7 @@ import pickle
 import shutil
 import numpy as np
 import time
+from pathlib import Path
 
 
 def os_call(command):
@@ -48,3 +49,10 @@ class MyTimer(object):
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         print('[finished, spent time: {time:.2f}s]'.format(time=time.time() - self.t0))
+
+
+def get_path_by_ext(this_dir, ext_list=None):
+    if ext_list is None:
+        print('Use image ext as default !')
+        ext_list = [".jpg", ".png", ".JPG", ".webp", ".jpeg"]
+    return [p for p in Path(this_dir).rglob('*') if p.suffix in ext_list]

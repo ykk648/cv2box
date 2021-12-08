@@ -3,3 +3,4 @@
 # @Author : ykk648
 # @Project : https://github.com/ykk648/cv2box
 from .cv_image import CVImage
+from .cv_queue import CVQueue

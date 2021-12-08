@@ -5,9 +5,9 @@
 import cv2
 import numpy as np
 from PIL import Image
-from torchvision import transforms
 import base64
 import io
+from pathlib import PosixPath
 
 """
 skimage and pillow read image based uint8 and RGB mode
@@ -17,9 +17,10 @@ using opencv as the default image read method
 
 
 class CVImage:
-    def __init__(self, image_in, image_format='cv2'):
+    def __init__(self, image_in, image_format='cv2', image_size=None):
         self.transform = None
-
+        if isinstance(image_in, PosixPath):
+            image_in = str(image_in)
         if isinstance(image_in, str) and image_format == 'cv2':
             # assert type(image_in) is str, 'if not give str path, name \'image_format\' !'
             self.cv_image = cv2.imread(image_in)
@@ -38,6 +39,8 @@ class CVImage:
             self.cv_image = cv2.imdecode(img_array, 1)
         elif 'byte' in image_format:
             self.cv_image = cv2.imdecode(np.frombuffer(io.BytesIO(image_in).read(), np.uint8), 1)
+        # elif 'buffer' in image_format:
+        #     self.cv_image = np.frombuffer(image_in, np.uint8).reshape(image_size)
         else:
             raise 'Can not find image_format ！'
 
@@ -69,6 +72,14 @@ class CVImage:
         image_code = str(base64.b64encode(image))[2:-1]
         return 'data:image/jpg;base64,' + image_code
 
+    @property
+    def bytes(self):
+        return self.cv_image.tobytes()
+
+    @property
+    def format_bytes(self, image_format='png'):
+        return cv2.imencode(".{}".format(image_format), self.cv_image)[1].tobytes()
+
     def resize(self, size):
         if type(size) == tuple:
             self.cv_image = cv2.resize(self.cv_image, size)
@@ -78,6 +89,7 @@ class CVImage:
             raise 'Check the size input !'
 
     def set_transform(self, transform=None):
+        from torchvision import transforms
         if not transform:
             self.transform = transform
         else:
