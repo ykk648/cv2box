@@ -39,8 +39,8 @@ class CVImage:
             self.cv_image = cv2.imdecode(img_array, 1)
         elif 'byte' in image_format:
             self.cv_image = cv2.imdecode(np.frombuffer(io.BytesIO(image_in).read(), np.uint8), 1)
-        # elif 'buffer' in image_format:
-        #     self.cv_image = np.frombuffer(image_in, np.uint8).reshape(image_size)
+        elif 'buffer' in image_format:
+            self.cv_image = np.frombuffer(image_in, np.uint8).reshape(image_size)
         else:
             raise 'Can not find image_format ！'
 

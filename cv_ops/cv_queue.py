@@ -6,16 +6,17 @@ import time
 from multiprocessing import shared_memory
 import uuid
 import numpy as np
-from cv2box import CVImage
-import array
+# from .cv_image import CVImage
 
 
 class CVQueue:
-    def __init__(self, queue_length, mem_name, max_data_size=None):
+    def __init__(self, queue_length, mem_name, max_data_size=None, retry=True, rw_sleep_time=0.01, silence=False):
+        self.push_buffer_len = None
         self.index_mem_name = mem_name
         self.data_size_name = mem_name + 'data_size'
         self.max_data_size = max_data_size
         self.queue_length = queue_length
+        self.rw_sleep_time = rw_sleep_time
         self.push_flag = 0
         self.get_flag = 0
 
@@ -25,18 +26,36 @@ class CVQueue:
         self.data_shm_name_list = []
         self.data_size_list = []
 
-        try:
-            self.index_shm = shared_memory.ShareableList(name=self.index_mem_name)
-            self.data_size_shm = shared_memory.ShareableList(name=self.data_size_name)
-            print('this is guest')
-        except FileNotFoundError:
+        if not max_data_size:
+            if retry:
+                while True:
+                    time.sleep(5)
+                    try:
+                        self.index_shm = shared_memory.ShareableList(name=self.index_mem_name)
+                        self.data_size_shm = shared_memory.ShareableList(name=self.data_size_name)
+                    except FileNotFoundError:
+                        if not silence:
+                            print('can not find index mem name: {}, data size mem name: {}, retry after 5s'.format(
+                                self.index_mem_name, self.data_size_name))
+                        continue
+                    break
+            else:
+                self.index_shm = shared_memory.ShareableList(name=self.index_mem_name)
+                self.data_size_shm = shared_memory.ShareableList(name=self.data_size_name)
+            if not silence:
+                print('this is guest, index mem name: {}, data size mem name: {}'.format(self.index_mem_name,
+                                                                                         self.data_size_name))
+        else:
             self.init_data_shm()
-            print('this is host')
+            if not silence:
+                print('this is host, index mem name: {}, data size mem name: {}'.format(self.index_mem_name,
+                                                                                        self.data_size_name))
 
     def init_data_shm(self):
         for i in range(self.queue_length):
             data_shm_name = uuid.uuid4().hex
-            self.data_shm_list.append(shared_memory.SharedMemory(name=data_shm_name, create=True, size=self.max_data_size))
+            self.data_shm_list.append(
+                shared_memory.SharedMemory(name=data_shm_name, create=True, size=self.max_data_size))
             self.data_shm_name_list.append(data_shm_name)
             self.data_size_list.append(self.max_data_size)
         self.index_shm = shared_memory.ShareableList(self.data_shm_name_list, name=self.index_mem_name)
@@ -44,24 +63,38 @@ class CVQueue:
         for i in range(self.queue_length):
             self.index_shm[i] = 'None'
 
-    def put(self, push_buffer):
+    def put(self, push_buffer, aim_format=None):
+        # if aim_format == 'numpy':
+        #     push_buffer = push_buffer.tobytes()
+
         while True:
-            push_buffer_len = len(push_buffer)
+            self.push_buffer_len = len(push_buffer)
             if self.index_shm[self.push_flag] == 'None':
-                self.data_shm_list[self.push_flag].buf[:push_buffer_len] = push_buffer[:]
-                self.index_shm[self.push_flag] = self.data_shm_name_list[self.push_flag]
-                self.data_size_shm[self.push_flag] = push_buffer_len
+                self.data_shm_list[self.push_flag].buf[:self.push_buffer_len] = push_buffer[:]
                 break
+            time.sleep(self.rw_sleep_time)
+        self.index_shm[self.push_flag] = self.data_shm_name_list[self.push_flag]
+        self.data_size_shm[self.push_flag] = self.push_buffer_len
         self.push_flag += 1
         self.push_flag %= self.queue_length
 
+    # def put_ok(self):
+    #     pass
+
     def get(self):
         while True:
-            if self.index_shm[self.get_flag] != 'None':
-                print(self.index_shm[self.get_flag])
-                get_buffer = shared_memory.SharedMemory(name=self.index_shm[self.get_flag])
-                get_buffer_len = self.data_size_shm[self.get_flag]
-                break
+            try:
+                if self.index_shm[self.get_flag] != 'None':
+                    # print(self.index_shm[self.get_flag])
+                    get_buffer = shared_memory.SharedMemory(name=self.index_shm[self.get_flag])
+                    # time.sleep(0.02)
+                    get_buffer_len = self.data_size_shm[self.get_flag]
+                    break
+                time.sleep(self.rw_sleep_time)
+            except ValueError:
+                print('occur one mem access false, wait {}s and retry'.format(self.rw_sleep_time))
+                time.sleep(self.rw_sleep_time)
+                continue
         return get_buffer, get_buffer_len
 
     def get_ok(self):
@@ -79,25 +112,46 @@ class CVQueue:
             self.data_shm_list[i].unlink()
 
     def full(self):
-        return not (np.array(self.index_shm) == 'None').any()
+        time.sleep(self.rw_sleep_time)
+        try:
+            return not (np.array(self.index_shm) == 'None').any()
+        except ValueError:
+            print('occur one mem access false, wait {}s and retry'.format(self.rw_sleep_time))
+            time.sleep(self.rw_sleep_time)
+            return not (np.array(self.index_shm) == 'None').any()
 
     def empty(self):
-        return (np.array(self.index_shm) == 'None').all()
+        time.sleep(self.rw_sleep_time)
+        try:
+            return (np.array(self.index_shm) == 'None').all()
+        except ValueError:
+            print('occur one mem access false, wait {}s and retry'.format(self.rw_sleep_time))
+            time.sleep(self.rw_sleep_time)
+            return (np.array(self.index_shm) == 'None').all()
 
-if __name__ == '__main__':
-    # 50M
-    cvq = CVQueue(10, mem_name='okbb', max_data_size=50*1024*1024)
+    @staticmethod
+    def clean_mem(mem_list: list, silence=True):
+        for name in mem_list:
+            try:
+                CVQueue(10, mem_name=name, retry=False, silence=True).close()
+            except:
+                pass
+        if not silence:
+            print('clean mem \'{} \'done !'.format(mem_list))
 
-    from utils.util import get_path_by_ext
-
-    for img_p in get_path_by_ext(''):
-        img_buffer = CVImage(img_p).format_bytes
-        print(len(img_buffer))
-        print(cvq.full())
-        print(cvq.empty())
-        cvq.push(img_buffer)
-
-        # get_buf = cvq.get()
-        # print(get_buf)
-        # print(type(get_buf.buf))
-        # CVImage(bytes(get_buf.buf), image_format='bytes').show()
+# if __name__ == '__main__':
+#     cvq = CVQueue(10, mem_name='cv2box', max_data_size=50 * 1024 * 1024)
+#
+#     from utils.util import get_path_by_ext
+#
+#     for img_p in get_path_by_ext(''):
+#         img_buffer = CVImage(img_p).format_bytes
+#         print(len(img_buffer))
+#         print(cvq.full())
+#         print(cvq.empty())
+#         cvq.push(img_buffer)
+#
+#         # get_buf = cvq.get()
+#         # print(get_buf)
+#         # print(type(get_buf.buf))
+#         # CVImage(bytes(get_buf.buf), image_format='bytes').show()
