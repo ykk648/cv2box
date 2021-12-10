@@ -7,12 +7,16 @@ Based on ShareMemory , which is more efficient than socket or grpc.
 
 #### idea
 
+![CVQueue](./src/cvqueue.png)
+
 #### fixed problems
 
 - Deal with memory release;
 - Sync without lock;
 - Multi size buffer trans;
-- Add queue-like api like full/empty;
+- Add queue-like api like full/empty/close;
+- Mem access delay to avoid access fail;
+- More retry logic;
 
 ### CV Image
 

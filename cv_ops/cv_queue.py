@@ -6,7 +6,6 @@ import time
 from multiprocessing import shared_memory
 import uuid
 import numpy as np
-# from .cv_image import CVImage
 
 
 class CVQueue:
@@ -29,14 +28,21 @@ class CVQueue:
         if not max_data_size:
             if retry:
                 while True:
-                    time.sleep(5)
                     try:
                         self.index_shm = shared_memory.ShareableList(name=self.index_mem_name)
+                    except FileNotFoundError:
+                        if not silence:
+                            print('can not find index mem name: {}, retry after 5s'.format(self.index_mem_name))
+                        time.sleep(5)
+                        continue
+                    break
+                while True:
+                    try:
                         self.data_size_shm = shared_memory.ShareableList(name=self.data_size_name)
                     except FileNotFoundError:
                         if not silence:
-                            print('can not find index mem name: {}, data size mem name: {}, retry after 5s'.format(
-                                self.index_mem_name, self.data_size_name))
+                            print('can not find data size mem name: {}, retry after 5s'.format(self.data_size_name))
+                        time.sleep(5)
                         continue
                     break
             else:
@@ -103,13 +109,22 @@ class CVQueue:
         self.get_flag %= self.queue_length
 
     def close(self):
-        self.index_shm.shm.close()
-        self.data_size_shm.shm.close()
-        self.index_shm.shm.unlink()
-        self.data_size_shm.shm.unlink()
+        try:
+            self.index_shm.shm.close()
+            self.index_shm.shm.unlink()
+        except FileNotFoundError:
+            return
+        try:
+            self.data_size_shm.shm.close()
+            self.data_size_shm.shm.unlink()
+        except FileNotFoundError:
+            return
         for i in range(len(self.data_shm_list)):
-            self.data_shm_list[i].close()
-            self.data_shm_list[i].unlink()
+            try:
+                self.data_shm_list[i].close()
+                self.data_shm_list[i].unlink()
+            except FileNotFoundError:
+                return
 
     def full(self):
         time.sleep(self.rw_sleep_time)
