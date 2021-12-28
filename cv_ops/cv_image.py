@@ -19,6 +19,7 @@ using opencv as the default image read method
 class CVImage:
     def __init__(self, image_in, image_format='cv2', image_size=None):
         self.transform = None
+        self.input_std = self.input_mean = self.input_size = None
         if isinstance(image_in, PosixPath):
             image_in = str(image_in)
         if isinstance(image_in, str) and image_format == 'cv2':
@@ -76,6 +77,21 @@ class CVImage:
     def bytes(self):
         return self.cv_image.tobytes()
 
+    def set_blob(self, input_std, input_mean, input_size):
+        self.input_std = input_std
+        self.input_mean = input_mean
+        self.input_size = input_size
+        return self
+
+    @property
+    def blob_rgb(self):
+        assert self.input_std and self.input_mean and self.input_size, 'Use set_blob first!'
+        if not isinstance(self.cv_image, list):
+            self.cv_image = [self.cv_image]
+
+        return cv2.dnn.blobFromImages(self.cv_image, 1.0 / self.input_std, self.input_size,
+                                      (self.input_mean, self.input_mean, self.input_mean), swapRB=True)
+
     @property
     def format_bytes(self, image_format='png'):
         return cv2.imencode(".{}".format(image_format), self.cv_image)[1].tobytes()
@@ -87,6 +103,7 @@ class CVImage:
             self.cv_image = cv2.resize(self.cv_image, (size, size))
         else:
             raise 'Check the size input !'
+        return self
 
     def set_transform(self, transform=None):
         from torchvision import transforms
@@ -97,6 +114,7 @@ class CVImage:
                 transforms.ToTensor(),
                 transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
             ])
+        return self
 
     def show(self):
         cv2.namedWindow('test', 0)

@@ -39,6 +39,12 @@ def np_norm(x):
     return (x - np.average(x)) / np.std(x)
 
 
+# def np_norm(v):
+#     norm = np.linalg.norm(v)
+#     if norm == 0:
+#         return v
+#     return v / norm
+
 class MyTimer(object):
     """
     timer
@@ -49,6 +55,17 @@ class MyTimer(object):
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         print('[finished, spent time: {time:.2f}s]'.format(time=time.time() - self.t0))
+
+
+class MyFpsCounter(object, ):
+    def __init__(self, flag='temp'):
+        self.flag = flag
+
+    def __enter__(self):
+        self.t0 = time.time()
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        print('[{} fps: {fps}]'.format(self.flag, fps=1 / (time.time() - self.t0)))
 
 
 def get_path_by_ext(this_dir, ext_list=None):

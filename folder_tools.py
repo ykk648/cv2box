@@ -5,6 +5,8 @@ from tqdm import tqdm
 import random
 from .utils import make_random_name
 from pathlib import Path
+
+
 # import imagededup
 # from imagededup.methods import PHash
 # from imagededup.methods import CNN
@@ -37,7 +39,7 @@ class FolderTools:
             aim_p = os.path.join(self.root_path, f.replace(prefix1, prefix2))
             os.rename(f_p, aim_p)
 
-    def extract_imgs_from_folder(self, img_num=0, patten=None, random_flag=True):
+    def extract_imgs_from_folder(self, img_num=0, patten=None, random_flag=True, paste=False):
         if patten is None:
             patten = '*.jpg'
         count = 0
@@ -53,10 +55,16 @@ class FolderTools:
                 aim_p = os.path.join(self.save_path, ff)
                 if os.path.exists(aim_p):
                     aim_p = os.path.join(self.save_path, make_random_name(ff))
-                shutil.copy(f_p, aim_p)
+                if paste:
+                    shutil.move(f_p, aim_p)
+                else:
+                    shutil.copy(f_p, aim_p)
                 count += 1
                 if count % 1000 == 0:
-                    print('copy {} imgs from {} to {}'.format(count, self.root_path, self.save_path))
+                    if paste:
+                        print('paste {} imgs from {} to {}'.format(count, self.root_path, self.save_path))
+                    else:
+                        print('copy {} imgs from {} to {}'.format(count, self.root_path, self.save_path))
                 if count == img_num:
                     return
 
@@ -69,3 +77,11 @@ class FolderTools:
         # print(len(f_list_remove))
         for f in tqdm(f_list_remove):
             os.remove(os.path.join(self.root_path, f))
+
+    # def file_split(self, num_per_dir):
+
+
+if __name__ == '__main__':
+    ft = FolderTools('/workspace/151_cluster/nfs/cv_rsync/dataset/HifiFace/face_source/vggface2_256',
+                     save_path='/workspace/151_cluster/nfs/dataset/deepfacelab/标注工作区/211221_人脸属性标注/6_vggface2_1w_2')
+    ft.extract_imgs_from_folder(img_num=10000, paste=False)

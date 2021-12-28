@@ -15,3 +15,6 @@ class CalDistance:
 
     def euc_norm(self):
         return np.linalg.norm(np_norm(self.vector1) - (self.vector2))
+
+    def sim(self):
+        return np.dot(self.vector1, self.vector2) / (np.linalg.norm(self.vector1) * np.linalg.norm(self.vector2))
