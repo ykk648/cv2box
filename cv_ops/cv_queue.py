@@ -154,19 +154,3 @@ class CVQueue:
         if not silence:
             print('clean mem \'{} \'done !'.format(mem_list))
 
-# if __name__ == '__main__':
-#     cvq = CVQueue(10, mem_name='cv2box', max_data_size=50 * 1024 * 1024)
-#
-#     from utils.util import get_path_by_ext
-#
-#     for img_p in get_path_by_ext(''):
-#         img_buffer = CVImage(img_p).format_bytes
-#         print(len(img_buffer))
-#         print(cvq.full())
-#         print(cvq.empty())
-#         cvq.push(img_buffer)
-#
-#         # get_buf = cvq.get()
-#         # print(get_buf)
-#         # print(type(get_buf.buf))
-#         # CVImage(bytes(get_buf.buf), image_format='bytes').show()

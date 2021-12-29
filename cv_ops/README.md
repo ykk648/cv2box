@@ -23,6 +23,12 @@ from PIL import Image
 img_in_pillow = Image.open('image path')
 CVImage(img_in_pillow, image_format='pillow').resize(256,256).save('image save path')
 
+# image2tensor
+trans = {}
+CVImage(img_in).set_transform(trans).tensor.cuda()
+# image2cvblob
+onnx_input = CVImage(img_in).set_blob(127.5,127.5,(112,112)).blob_rgb
+
 ```
 
 ### CV Queue
@@ -79,3 +85,7 @@ from cv2box import CVFile
 pkl = './test.pkl'
 print(CVFile(pkl).data)
 ```
+
+### CV Excel
+
+basic ops for insert data to excel file.

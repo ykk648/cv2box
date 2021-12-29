@@ -20,21 +20,24 @@ Now including these functions:
 
 - [CVFile](./cv_ops#cv-file) , for multi-class file io.
 
+- [CVExcel](./cv_ops#cv-excel) , basic ops for insert data to excel file.
+
 - [CVVideo](), todo
 
-- 
 
 ### code templates
 
 - multiprocess example by concurrent
 - multiprocess consumer example
+- keyboard listener in separate thread
+- full-stack web demo for deep learning http distribute
 
 ### shell scripts
 
 - rsync between different servers
 - batch uncompress script support different types(zip tar 7z etc.)
 
-### functions in py file
+### functions in py file (deprecated, wait to rewrite)
 
 #### Img
 

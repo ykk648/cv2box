@@ -16,10 +16,8 @@ using opencv as the default image read method
 """
 
 
-class CVImage:
-    def __init__(self, image_in, image_format='cv2', image_size=None):
-        self.transform = None
-        self.input_std = self.input_mean = self.input_size = None
+class ImageBasic:
+    def __init__(self, image_in, image_format, image_size):
         if isinstance(image_in, PosixPath):
             image_in = str(image_in)
         if isinstance(image_in, str) and image_format == 'cv2':
@@ -57,13 +55,31 @@ class CVImage:
     def pillow(self):
         return Image.fromarray(cv2.cvtColor(self.cv_image, cv2.COLOR_BGR2RGB))
 
-    @property
-    def tensor(self):
-        import torch
-        assert self.transform is not None, 'Use set_transform first !'
-        img = self.transform(self.cv_image)
-        return torch.unsqueeze(img, 0)
+    def resize(self, size):
+        if type(size) == tuple:
+            self.cv_image = cv2.resize(self.cv_image, size)
+        elif type(size) == int:
+            self.cv_image = cv2.resize(self.cv_image, (size, size))
+        else:
+            raise 'Check the size input !'
+        return self
 
+    def show(self, window_name='test'):
+        cv2.namedWindow(window_name, 0)
+        cv2.imshow(window_name, self.cv_image)
+        cv2.waitKey(0)
+
+    def save(self, img_save_p):
+        cv2.imwrite(img_save_p, self.cv_image)
+
+
+class CVImage(ImageBasic):
+    def __init__(self, image_in, image_format='cv2', image_size=None):
+        super().__init__(image_in, image_format, image_size)
+        self.transform = None
+        self.input_std = self.input_mean = self.input_size = None
+
+    # ===== for image transfer =====
     @property
     def base64(self):
         """
@@ -75,8 +91,22 @@ class CVImage:
 
     @property
     def bytes(self):
+        """
+        fast enough for video real-time steam process
+        :return:
+        """
         return self.cv_image.tobytes()
 
+    @property
+    def format_bytes(self, image_format='png'):
+        """
+        convenience but low speed
+        :param image_format:
+        :return:
+        """
+        return cv2.imencode(".{}".format(image_format), self.cv_image)[1].tobytes()
+
+    # ===== for preprocess data through cv2 to onnx model =====
     def set_blob(self, input_std, input_mean, input_size):
         self.input_std = input_std
         self.input_mean = input_mean
@@ -92,19 +122,7 @@ class CVImage:
         return cv2.dnn.blobFromImages(self.cv_image, 1.0 / self.input_std, self.input_size,
                                       (self.input_mean, self.input_mean, self.input_mean), swapRB=True)
 
-    @property
-    def format_bytes(self, image_format='png'):
-        return cv2.imencode(".{}".format(image_format), self.cv_image)[1].tobytes()
-
-    def resize(self, size):
-        if type(size) == tuple:
-            self.cv_image = cv2.resize(self.cv_image, size)
-        elif type(size) == int:
-            self.cv_image = cv2.resize(self.cv_image, (size, size))
-        else:
-            raise 'Check the size input !'
-        return self
-
+    # ===== convert numpy image to transformed tensor =====
     def set_transform(self, transform=None):
         from torchvision import transforms
         if not transform:
@@ -116,10 +134,9 @@ class CVImage:
             ])
         return self
 
-    def show(self):
-        cv2.namedWindow('test', 0)
-        cv2.imshow('test', self.cv_image)
-        cv2.waitKey(0)
-
-    def save(self, img_save_p):
-        cv2.imwrite(img_save_p, self.cv_image)
+    @property
+    def tensor(self):
+        import torch
+        assert self.transform is not None, 'Use set_transform first !'
+        img = self.transform(self.cv_image)
+        return torch.unsqueeze(img, 0)
