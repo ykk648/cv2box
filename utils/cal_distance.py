@@ -1,5 +1,6 @@
 import numpy as np
 from .util import np_norm
+import numexpr as ne
 
 
 class CalDistance:
@@ -16,5 +17,16 @@ class CalDistance:
     def euc_norm(self):
         return np.linalg.norm(np_norm(self.vector1) - (self.vector2))
 
-    def sim(self):
-        return np.dot(self.vector1, self.vector2) / (np.linalg.norm(self.vector1) * np.linalg.norm(self.vector2))
+    @staticmethod
+    def sim(vector1, vector2):
+        return np.dot(vector1, vector2) / (np.linalg.norm(vector1) * np.linalg.norm(vector2))
+
+    @staticmethod
+    def cosine_ne(array1, array2):
+        # fast face similarity cal func
+        sumyy = np.einsum('ij,ij->i', array2, array2)
+        sumxx = np.einsum('ij,ij->i', array1, array1)[:, None]
+        sumxy = array1.dot(array2.T)
+        sqrt_sumxx = ne.evaluate('sqrt(sumxx)')
+        sqrt_sumyy = ne.evaluate('sqrt(sumyy)')
+        return ne.evaluate('(sumxy/sqrt_sumxx)/sqrt_sumyy')

@@ -57,9 +57,12 @@ class ImageBasic:
 
     def resize(self, size):
         if type(size) == tuple:
-            self.cv_image = cv2.resize(self.cv_image, size)
+            if size != self.cv_image.shape[:-1]:
+                # cv2 resize function always returns a new Mat object.
+                self.cv_image = cv2.resize(self.cv_image, size)
         elif type(size) == int:
-            self.cv_image = cv2.resize(self.cv_image, (size, size))
+            if size != self.cv_image.shape[0]:
+                self.cv_image = cv2.resize(self.cv_image, (size, size))
         else:
             raise 'Check the size input !'
         return self
@@ -121,6 +124,30 @@ class CVImage(ImageBasic):
 
         return cv2.dnn.blobFromImages(self.cv_image, 1.0 / self.input_std, self.input_size,
                                       (self.input_mean, self.input_mean, self.input_mean), swapRB=True)
+
+    def innormal(self, mean, std, to_rgb=True):
+        """Inplace normalize an image with mean and std.
+        Args:
+            mean (ndarray): The mean to be used for normalize.
+            std (ndarray): The std to be used for normalize.
+            to_rgb (bool): Whether to convert to rgb.
+
+        Returns:
+            ndarray: The normalized image.
+        """
+        # cv2 inplace normalization does not accept uint8
+        self.cv_image = np.float32(self.cv_image)
+        mean = np.array(mean, dtype=np.float32)
+        std = np.array(std, dtype=np.float32)
+        assert self.cv_image.dtype != np.uint8
+        mean = np.float64(mean.reshape(1, -1))
+        stdinv = 1 / np.float64(std.reshape(1, -1))
+        if to_rgb:
+            cv2.cvtColor(self.cv_image, cv2.COLOR_BGR2RGB, self.cv_image)  # inplace
+        cv2.subtract(self.cv_image, mean, self.cv_image)  # inplace
+        cv2.multiply(self.cv_image, stdinv, self.cv_image)  # inplace
+        return self.cv_image
+
 
     # ===== convert numpy image to transformed tensor =====
     def set_transform(self, transform=None):
