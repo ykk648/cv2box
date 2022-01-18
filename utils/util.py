@@ -12,8 +12,11 @@ def os_call(command):
     os.system(command)
 
 
-def make_random_name(f_name):
-    return uuid.uuid4().hex + '.' + f_name.split('.')[-1]
+def make_random_name(suffix_or_name=None):
+    if '.' in suffix_or_name:
+        return uuid.uuid4().hex + '.' + suffix_or_name.split('.')[-1]
+    else:
+        return uuid.uuid4().hex + '.' + suffix_or_name
 
 
 def flush_print(str_to_print):

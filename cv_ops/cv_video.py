@@ -1,10 +1,14 @@
+# -- coding: utf-8 --
+# @Time : 2021/12/29
+# @Author : ykk648
+# @Project : https://github.com/ykk648/cv2box
 import os
 import re
 
 import cv2
 import shutil
 from tqdm import tqdm
-from .utils import os_call
+from utils import os_call
 import numpy as np
 from moviepy.editor import VideoFileClip
 
@@ -13,7 +17,7 @@ def decode_fourcc(cc):
     return "".join([chr((int(cc) >> 8 * i) & 0xFF) for i in range(4)])
 
 
-class VideoTools:
+class CVVideo:
     def __init__(self, video_p, verbose=True):
         self.video_path = video_p
         self.video_dir, self.video_name = os.path.split(self.video_path)

@@ -22,7 +22,7 @@ Now including these functions:
 
 - [CVExcel](./cv_ops#cv-excel) , basic ops for insert data to excel file.
 
-- [CVVideo](), todo
+- [CVVideo](./cv_ops#cv-video), a video class support multi kind of ops.
 
 
 ### code templates
