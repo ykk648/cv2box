@@ -8,9 +8,8 @@ import re
 import cv2
 import shutil
 from tqdm import tqdm
-from utils import os_call
+from ..utils import os_call
 import numpy as np
-from moviepy.editor import VideoFileClip
 
 
 def decode_fourcc(cc):
@@ -255,9 +254,5 @@ class CVVideo:
                                                                              video_out_p.replace('_concat_out.mp4',
                                                                                                  '_concat_out_audio.mp4')))
             os_call('rm ./temp.m4a')
-            # video = VideoFileClip(self.video_path)
-            # video_out = VideoFileClip(video_out_p)
-            # video_out_audio = video_out.set_audio(video.audio)
-            # video_out_audio.write_videofile(video_out_p.replace('_concat_out.mp4', '_concat_out_audio.mp4'))
 
         return video_out_p

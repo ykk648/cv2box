@@ -1,8 +1,5 @@
 numpy
-seaborn
 tqdm
 opencv_python
-moviepy
-matplotlib
-Pillow
 apscheduler
+numexpr

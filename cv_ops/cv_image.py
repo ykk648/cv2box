@@ -4,7 +4,6 @@
 # @Project : https://github.com/ykk648/cv2box
 import cv2
 import numpy as np
-from PIL import Image
 import base64
 import io
 from pathlib import PosixPath
@@ -53,6 +52,7 @@ class ImageBasic:
 
     @property
     def pillow(self):
+        from PIL import Image
         return Image.fromarray(cv2.cvtColor(self.cv_image, cv2.COLOR_BGR2RGB))
 
     def resize(self, size):

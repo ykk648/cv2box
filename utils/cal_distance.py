@@ -1,6 +1,5 @@
 import numpy as np
 from .util import np_norm
-import numexpr as ne
 
 
 class CalDistance:
@@ -23,6 +22,7 @@ class CalDistance:
 
     @staticmethod
     def cosine_ne(array1, array2):
+        import numexpr as ne
         # fast face similarity cal func
         sumyy = np.einsum('ij,ij->i', array2, array2)
         sumxx = np.einsum('ij,ij->i', array1, array1)[:, None]

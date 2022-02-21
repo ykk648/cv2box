@@ -1,7 +1,3 @@
-# VERSION 0.09
-from .folder_tools import FolderTools
-from .img_tools import ImgTools
-from .video_tools import VideoTools
-from .utils import MyTimer, MyFpsCounter
-from .cv_ops import CVImage, CVQueue, CVFile
-from .get_templates import GetTemplate
+# VERSION 0.2.0
+from .utils import MyTimer, MyFpsCounter, try_import
+from .cv_ops import CVImage, CVQueue, CVFile, CVVideo
