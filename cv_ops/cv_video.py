@@ -41,7 +41,7 @@ class CVVideo:
             'video info:\nname: {}\nfourcc: {}\nfps: {}\nsize: {}'.format(self.video_name, decode_fourcc(fourcc), fps,
                                                                           size))
 
-    def show_video_cv(self):
+    def show_video_cv(self, delay=100):
         cap = cv2.VideoCapture(self.video_path)
         success = True
         while success:
@@ -49,7 +49,7 @@ class CVVideo:
             cv2.namedWindow("First Frame", 0)
             cv2.imshow('First Frame', frame)
             # cv2.waitKey(99999)
-            if cv2.waitKey(100) == 27 or 0xFF == ord('q'):
+            if cv2.waitKey(delay) == 27 or 0xFF == ord('q'):
                 break
         cap.release()
         cv2.destroyAllWindows()

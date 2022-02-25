@@ -18,7 +18,7 @@ more info and code example plz read [wiki](https://github.com/ykk648/cv2box/wiki
 
 Now including these functions:
 
-### AI power (move to [AI_power](https://github.com/ykk648/AI_power))
+### AI power (moved to [AI_power](https://github.com/ykk648/AI_power))
 
 ### cv ops
 

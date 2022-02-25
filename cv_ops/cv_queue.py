@@ -3,10 +3,12 @@
 # @Author : ykk648
 # @Project : https://github.com/ykk648/cv2box
 import time
-from multiprocessing import shared_memory
+# from multiprocessing import shared_memory
 import uuid
 import numpy as np
-
+from ..utils.util import try_import
+# python > 3.8
+try_import('multiprocessing.shared_memory', 'If u need CVQueue, plz make sure your python version >= 3.8.')
 
 class CVQueue:
     def __init__(self, queue_length, mem_name, max_data_size=None, retry=True, rw_sleep_time=0.01, silence=False):

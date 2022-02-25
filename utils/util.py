@@ -8,6 +8,7 @@ from pathlib import Path
 from importlib import import_module
 import warnings
 
+
 def os_call(command):
     print(command)
     os.system(command)
@@ -79,9 +80,11 @@ def get_path_by_ext(this_dir, ext_list=None):
     return [p for p in Path(this_dir).rglob('*') if p.suffix in ext_list]
 
 
-def try_import(pkg_name):
+def try_import(pkg_name, warn_message=None):
     try:
         import_module(pkg_name)
     except ModuleNotFoundError:
-        warnings.warn('can not find package: {}, try install or reinstall it !'.format(pkg_name), )
+        if not warn_message:
+            warn_message = 'can not find package: {}, try install or reinstall it !'.format(pkg_name)
+        warnings.warn(warn_message)
         pass

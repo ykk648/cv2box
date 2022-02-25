@@ -67,10 +67,24 @@ class ImageBasic:
             raise 'Check the size input !'
         return self
 
-    def show(self, window_name='test'):
+    def resize_keep_ratio(self, target_size, pad_value=(0, 0, 0)):
+        old_size = self.cv_image.shape[0:2]
+        # ratio = min(float(target_size)/(old_size))
+        ratio = min(float(target_size[i]) / (old_size[i]) for i in range(len(old_size)))
+        new_size = tuple([int(i * ratio) for i in old_size])
+        self.cv_image = cv2.resize(self.cv_image, (new_size[1], new_size[0]))
+        pad_w = target_size[1] - new_size[1]
+        pad_h = target_size[0] - new_size[0]
+        top, bottom = pad_h // 2, pad_h - (pad_h // 2)
+        left, right = pad_w // 2, pad_w - (pad_w // 2)
+        self.cv_image = cv2.copyMakeBorder(self.cv_image, top, bottom, left, right, cv2.BORDER_CONSTANT, None,
+                                           pad_value)
+        return self.cv_image, ratio, pad_w, pad_h
+
+    def show(self, window_name='test', wait_time=0):
         cv2.namedWindow(window_name, 0)
         cv2.imshow(window_name, self.cv_image)
-        cv2.waitKey(0)
+        cv2.waitKey(wait_time)
 
     def save(self, img_save_p):
         cv2.imwrite(img_save_p, self.cv_image)
@@ -147,7 +161,6 @@ class CVImage(ImageBasic):
         cv2.subtract(self.cv_image, mean, self.cv_image)  # inplace
         cv2.multiply(self.cv_image, stdinv, self.cv_image)  # inplace
         return self.cv_image
-
 
     # ===== convert numpy image to transformed tensor =====
     def set_transform(self, transform=None):
