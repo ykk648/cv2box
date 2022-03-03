@@ -256,3 +256,22 @@ class CVVideo:
             os_call('rm ./temp.m4a')
 
         return video_out_p
+
+
+class CVVideoLoader(object,):
+
+    def __init__(self, video_p):
+        self.video_p = video_p
+
+    def __enter__(self):
+        self.cap = cv2.VideoCapture(self.video_p)
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.cap.release()
+
+    def __len__(self):
+        return int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))
+
+    def get(self):
+        return self.cap.read()

@@ -81,7 +81,7 @@ class ImageBasic:
                                            pad_value)
         return self.cv_image, ratio, pad_w, pad_h
 
-    def show(self, window_name='test', wait_time=0):
+    def show(self,  wait_time=0, window_name='test'):
         cv2.namedWindow(window_name, 0)
         cv2.imshow(window_name, self.cv_image)
         cv2.waitKey(wait_time)

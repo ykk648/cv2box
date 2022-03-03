@@ -73,6 +73,18 @@ class MyFpsCounter(object, ):
         print('[{} fps: {fps}]'.format(self.flag, fps=1 / (time.time() - self.t0)))
 
 
+def mfc(flag=''):
+    def decorator(f):
+        def wrapper(*args, **kwargs):
+            t0 = time.time()
+            # print(f.__code__)
+            res = f(*args, **kwargs)
+            print('[{} {} fps: {fps}]'.format(flag, f.__name__, fps=1 / (time.time() - t0)))
+            return res
+        return wrapper
+    return decorator
+
+
 def get_path_by_ext(this_dir, ext_list=None):
     if ext_list is None:
         print('Use image ext as default !')

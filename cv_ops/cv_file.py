@@ -6,6 +6,7 @@ import pickle
 from pathlib import Path
 import json
 import numpy as np
+import os
 
 
 class CVFile:
@@ -14,14 +15,14 @@ class CVFile:
         self.file_path = file_path
 
         if Path(self.file_path).exists():
-            suffix = Path(self.file_path).suffix
-            if suffix == '.pkl':
+            self.suffix = Path(self.file_path).suffix
+            if self.suffix == '.pkl':
                 with open(file_path, 'rb') as f:
                     self.file_data = pickle.load(f)
-            elif suffix == '.txt':
+            elif self.suffix == '.txt':
                 with open(file_path, 'rb') as f:
                     self.file_data = f.readlines()
-            elif suffix == '.json':
+            elif self.suffix == '.json':
                 with open(file_path, 'rb') as f:
                     self.file_data = json.load(f)
 
@@ -29,8 +30,14 @@ class CVFile:
     def data(self):
         return self.file_data
 
+    def show(self, head=True):
+        if self.suffix == '.json':
+            for k, v in self.file_data.items():
+                print('key: {}, length: {}, head: {}'.format(k, len(v), v[0]))
+
     def pickle_write(self, data_in):
-        with open(self.file_path, 'w') as f:
+        os.makedirs(str(Path(self.file_path).parent), exist_ok=True)
+        with open(self.file_path, 'wb') as f:
             pickle.dump(data_in, f)
 
     def json_write(self, data_in):
