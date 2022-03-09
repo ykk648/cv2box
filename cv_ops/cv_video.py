@@ -10,6 +10,7 @@ import shutil
 from tqdm import tqdm
 from ..utils import os_call
 import numpy as np
+from pathlib import Path
 
 
 def decode_fourcc(cc):
@@ -19,6 +20,7 @@ def decode_fourcc(cc):
 class CVVideo:
     def __init__(self, video_p, verbose=True):
         self.video_path = video_p
+        assert Path(self.video_path).exists()
         self.video_dir, self.video_name = os.path.split(self.video_path)
         self.prefix, self.suffix = os.path.splitext(self.video_name)
         if verbose:
@@ -258,7 +260,7 @@ class CVVideo:
         return video_out_p
 
 
-class CVVideoLoader(object,):
+class CVVideoLoader(object, ):
 
     def __init__(self, video_p):
         self.video_p = video_p

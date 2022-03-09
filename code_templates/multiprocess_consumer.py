@@ -28,7 +28,7 @@ class Consumer(Process):
         something_out = something_in
         return something_out
 
-    def run(self,):
+    def run(self, ):
 
         counter = 0
         time_sum = 0
@@ -48,9 +48,10 @@ class Consumer(Process):
             if self.fps_counter:
                 counter += 1
                 time_sum += (time.time() - start_time)
-                if (time.time() - start_time) > 10:
+                if time_sum > 10:
                     fp("Consumer FPS: {}".format(counter / time_sum))
                     counter = 0
+                    time_sum = 0
                 start_time = time.time()
 
             if self.block:
@@ -63,8 +64,6 @@ class Consumer(Process):
                     queue_full_counter += 1
                     if (time.time() - start_time) > 10:
                         fp('Queue full {} times'.format(queue_full_counter))
-
-
 
 
 if __name__ == '__main__':
