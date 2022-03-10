@@ -1,6 +1,6 @@
 ## cv2box - cv toolbox
 
-```
+```shell
 # clean install - no other dependencies
 pip install cv2box
 
@@ -9,6 +9,9 @@ pip install cv2box[light]
 
 # full install - referring requirements.txt
 pip install cv2box[full]
+
+# clone codes to your project without install
+git clone git@github.com:ykk648/cv2box.git --depth 1
 ```
 
 
@@ -36,7 +39,7 @@ Now including these functions:
 ### code templates
 
 - multiprocess example by concurrent
-- multiprocess consumer example
+- [multiprocess factory & consumer](./code_templates#Multiprocess)
 - keyboard listener in separate thread
 - full-stack web demo for deep learning http distribute
 

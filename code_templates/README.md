@@ -1,0 +1,41 @@
+## Multiprocess
+
+Easy to make your project parallel and faster.
+
+### inherent base class
+
+```python
+from cv2box import Factory, Consumer
+
+class SecondModel(Consumer):
+    def __init__(self, queue_list: list, block=True, fps_counter=False):
+        super().__init__(queue_list, block, fps_counter)
+        # model init
+        self.model = SomeNet()
+
+    def exit_func(self):
+        # rewrite your exit condition
+        pass
+
+    def forward_func(self, something_in):
+        if something_in is None:
+            return
+        in_1, in_2 = something_in
+        out_1, out_2 = self.model(in_1, in_2)
+        return [out_1, out_2]
+```
+
+### init class in main func
+
+```python
+from multiprocessing.dummy import Process, Queue
+
+q1 = Queue(2)
+q2 = Queue(2)
+m1 = FirstModel([q1],  fps_counter=True)
+m2 = SecondModel([q1, q2], fps_counter=True)
+m3 = FinalModel([q2],  fps_counter=True)
+m1.start()
+m2.start()
+m3.start()
+```
