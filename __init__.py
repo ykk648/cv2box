@@ -1,4 +1,4 @@
 # VERSION 0.2.0
 from .utils import MyTimer, MyFpsCounter, try_import, mfc
-from .cv_ops import CVImage, CVQueue, CVFile, CVVideo, CVVideoLoader
+from .cv_ops import CVImage, CVQueue, CVFile, CVVideo, CVVideoLoader, CVVideoMaker
 from .code_templates import Factory, Consumer

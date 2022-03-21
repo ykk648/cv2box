@@ -277,3 +277,18 @@ class CVVideoLoader(object, ):
 
     def get(self):
         return self.cap.read()
+
+
+class CVVideoMaker(object, ):
+    @staticmethod
+    def frame_2_video(frame_path_name, frame_rate=30, output_video_path=None):
+        """
+        :param frame_path_name:  .../lb_%d_graphormer_pred.jpg
+        :param frame_rate:
+        :param output_video_path:
+        :return:
+        """
+        if not output_video_path:
+            output_video_path = str(Path(frame_path_name).parent / 'output.mp4')
+        os_call(
+            'ffmpeg -f image2 -i {} -vcodec libx264 -vf "pad=ceil(iw/2)*2:ceil(ih/2)*2" -r {} {}'.format(frame_path_name, frame_rate, output_video_path))

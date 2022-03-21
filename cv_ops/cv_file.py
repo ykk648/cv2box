@@ -33,7 +33,16 @@ class CVFile:
     def show(self, head=True):
         if self.suffix == '.json':
             for k, v in self.file_data.items():
-                print('key: {}, length: {}, head: {}'.format(k, len(v), v[0]))
+                if type(v) == list:
+                    print('key: {}, length: {}, head: {}'.format(k, len(v), v[0]))
+                else:
+                    print('key: {}, length: {}, head type: {}'.format(k, len(v),type(v)))
+        elif self.suffix == '.pkl':
+            if type(self.file_data) is dict:
+                for k, v in self.file_data.items():
+                    print('key: {}, length: {}, head: {}'.format(k, len(v), v[0]))
+            elif type(self.file_data) is list:
+                print('detect list , list len: {}, head: {}'.format(len(self.file_data), self.file_data[0]))
 
     def pickle_write(self, data_in):
         os.makedirs(str(Path(self.file_path).parent), exist_ok=True)

@@ -3,7 +3,7 @@ from .util import np_norm
 
 
 class CalDistance:
-    def __init__(self, vector1, vector2):
+    def __init__(self, vector1=None, vector2=None):
         self.vector1 = vector1
         self.vector2 = vector2
 
