@@ -21,19 +21,17 @@ more info and code example plz read [wiki](https://github.com/ykk648/cv2box/wiki
 
 Now including these functions:
 
-### AI power (moved to [AI_power](https://github.com/ykk648/AI_power))
-
 ### cv ops
 
 - [CVImage](./cv_ops#cv-image) , a image class support multi format convert, usage: todo
+
+- [CVVideo](./cv_ops#cv-video), a video class support multi kind of ops.
 
 - [CVQueue](./cv_ops#cv-queue) , A queue-like high-level class which can be used for two different python projects on same host machine.
 
 - [CVFile](./cv_ops#cv-file) , for multi-class file io.
 
 - [CVExcel](./cv_ops#cv-excel) , basic ops for insert data to excel file.
-
-- [CVVideo](./cv_ops#cv-video), a video class support multi kind of ops.
 
 
 ### code templates
@@ -48,4 +46,9 @@ Now including these functions:
 - rsync between different servers
 - batch uncompress script support different types(zip tar 7z etc.)
 
-### functions in py file (deprecated)
+### utils
+
+- fps counter
+- apscheduler
+
+### AI power (moved to [AI_power](https://github.com/ykk648/AI_power))

@@ -3,3 +3,4 @@ tqdm
 opencv_python
 apscheduler
 numexpr
+h5py

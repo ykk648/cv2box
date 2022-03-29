@@ -31,6 +31,34 @@ onnx_input = CVImage(img_in).set_blob(127.5,127.5,(112,112)).blob_rgb
 
 ```
 
+### CV Video
+
+Basic video operate process using cv2 & ffmpeg.
+
+#### example
+
+```python
+from cv2box import CVVideo, CVImage, CVVideoLoader, CVVideoMaker
+from tqdm import tqdm
+
+# basic video ops
+vp = 'test.mp4'
+vt = CVVideo(vp).video_2_frame(interval=30)
+CVVideo(vp).video_2_h264(inplace=False)
+CVVideo(vp).cut_video('00:00:15', '00:00:35', accurate=True)
+
+# load a video to process by cv2
+with CVVideoLoader(vp) as cvvl:
+    # print(len(cvvl))
+    for _ in tqdm(range(len(cvvl))):
+        _, frame = cvvl.get()
+        CVImage(frame).show(0)
+
+# cluster frames to one video
+cvvm = CVVideoMaker().frame_2_video('frame_path/something_%d.jpg')
+```
+
+
 ### CV Queue
 
 A queue-like high-level class which can be used for two different python projects on same host machine.
@@ -76,20 +104,40 @@ while True:
 
 ### CV File
 
-Support pickle/txt/json/yaml etc. (todo)
+Make pickle/txt/json/yaml be one CVFile.
 
 #### example
 
 ```python
+# load from file
 from cv2box import CVFile
-pkl = './test.pkl'
-print(CVFile(pkl).data)
+pkl_p = './test.pkl'
+print(CVFile(pkl_p).data)
+json_p = './test.json'
+CVFile(json_p).show()
+npz_p = './test.npz'
+npz_object = CVFile(json_p).data
+
+# write to file
+import numpy as np
+dummy_dict = {}
+dummy_numpy = np.array([])
+CVFile(dummy_dict).json_write('write path')
+CVFile(dummy_numpy).pickle_write('write path')
 ```
 
 ### CV Excel
 
 basic ops for insert data to excel file.
 
-### CV Video
+#### example
 
-TODO
+```python
+from cv2box import CVExcel
+excel_p = 'test.xls'
+cve = CVExcel(excel_p)
+cve.create_sheet()
+cve.insert_image('A1', image_path='test.jpg', image_new_size=(256,256))
+cve.insert_words('B2', 'this is test words.')
+```
+

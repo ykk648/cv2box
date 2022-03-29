@@ -8,7 +8,6 @@ import json
 import numpy as np
 import os
 
-
 class CVFile:
     def __init__(self, file_path, file_format=None):
         self.file_data = None
@@ -25,6 +24,11 @@ class CVFile:
             elif self.suffix == '.json':
                 with open(file_path, 'rb') as f:
                     self.file_data = json.load(f)
+            elif self.suffix == '.npz':
+                self.file_data = np.load(file_path)
+            elif self.suffix == '.h5':
+                import h5py
+                self.file_data = h5py.File(self.file_path, "r")
 
     @property
     def data(self):
@@ -36,7 +40,7 @@ class CVFile:
                 if type(v) == list:
                     print('key: {}, length: {}, head: {}'.format(k, len(v), v[0]))
                 else:
-                    print('key: {}, length: {}, head type: {}'.format(k, len(v),type(v)))
+                    print('key: {}, head: {}, head type: {}'.format(k, v, type(v)))
         elif self.suffix == '.pkl':
             if type(self.file_data) is dict:
                 for k, v in self.file_data.items():
@@ -61,5 +65,7 @@ if __name__ == '__main__':
     # pkl = ''
     # print(CVFile(json_path).data)
 
-    json_path = '/home/tyler/图片/BingWallpaper/20210810-DinoShower_ZH-CN1791773864_UHD.json'
-    print(CVFile(json_path).data['flags']['1'])
+    pkl_p = '/workspace/84_cluster/mnt/cv_data_ljt/dataset/human_body/human3.6_2/h36m_annot/h36m/annot/train.h5'
+    data = CVFile(pkl_p).data
+    print(list(data.keys()))
+    print(data['zind'][0])
