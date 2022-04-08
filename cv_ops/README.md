@@ -109,17 +109,17 @@ Make pickle/txt/json/yaml be one CVFile.
 #### example
 
 ```python
-# load from file
 from cv2box import CVFile
-pkl_p = './test.pkl'
-print(CVFile(pkl_p).data)
-json_p = './test.json'
-CVFile(json_p).show()
-npz_p = './test.npz'
-npz_object = CVFile(json_p).data
+import numpy as np
+
+# load from file
+file_p = '*.pkl/*.json/*.npz/*.h5 etc'
+print(CVFile(file_p).data)
+# recursion show data structure
+CVFile(file_p).show(iter_times=3)   
+
 
 # write to file
-import numpy as np
 dummy_dict = {}
 dummy_numpy = np.array([])
 CVFile(dummy_dict).json_write('write path')

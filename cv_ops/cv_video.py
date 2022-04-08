@@ -132,11 +132,11 @@ class CVVideo:
             self.video_dir + '/' + self.prefix + '_reverse_out')
         os_call(command)
 
-    def video_2_frame(self, interval=1, out_path=None):
+    def video_2_frame(self, interval=1, out_path=None, compress=False):
         if out_path is None:
             save_path = self.video_path.split('.mp4')[0] + '/'
         else:
-            save_path = out_path
+            save_path = out_path + '/'
 
         is_exists = os.path.exists(save_path)
         if not is_exists:
@@ -162,7 +162,10 @@ class CVVideo:
             if i % interval == 0:
                 # 保存图片
                 j += 1
-                save_name = save_path + str(j) + '_' + str(i) + '.png'
+                if compress:
+                    save_name = save_path + str(j) + '_' + str(i) + '.jpg'
+                else:
+                    save_name = save_path + str(j) + '_' + str(i) + '.png'
                 cv2.imwrite(save_name, frame)
                 print('image of %s is saved' % save_name)
         video_capture.release()

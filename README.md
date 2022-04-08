@@ -25,7 +25,7 @@ Now including these functions:
 
 - [CVImage](./cv_ops#cv-image) , a image class support multi format convert, usage: todo
 
-- [CVVideo](./cv_ops#cv-video), a video class support multi kind of ops.
+- [CVVideo](./cv_ops#cv-video), a video class support multi kinds of ops.
 
 - [CVQueue](./cv_ops#cv-queue) , A queue-like high-level class which can be used for two different python projects on same host machine.
 
