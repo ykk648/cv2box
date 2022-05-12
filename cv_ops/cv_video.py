@@ -172,7 +172,7 @@ class CVVideo:
 
     def resize_video(self, out_size=(768, 1024), inplace=False):
 
-        out_p = self.video_path.replace(self.extension, '_{}x{}.mp4'.format(out_size[0], out_size[1]))
+        out_p = self.video_path.replace('.mp4', '_{}x{}.mp4'.format(out_size[0], out_size[1]))
         if inplace:
             os.system('mv {} {}'.format(self.video_path, out_p))
             self.video_path, out_p = out_p, self.video_path
@@ -182,9 +182,10 @@ class CVVideo:
 
         video_writer = cv2.VideoWriter(out_p, cv2.VideoWriter_fourcc(*'mp4v'), fps, out_size)
 
-        s = True
-        while s:
+        while True:
             s, img1 = cap.read()
+            if not s:
+                break
             img = cv2.resize(img1, out_size, cv2.INTER_LINEAR)
             video_writer.write(img)
         cap.release()
@@ -254,7 +255,7 @@ class CVVideo:
         reader2.release()
 
         if copy_audio:
-            os_call('ffmpeg - i {} -vn -codec copy {}'.format(self.video_path, './temp.m4a'))
+            os_call('ffmpeg -i {} -vn -codec copy {}'.format(self.video_path, './temp.m4a'))
             os_call("ffmpeg -i {} -i {} -vcodec copy -acodec copy {}".format(video_out_p, './temp.m4a',
                                                                              video_out_p.replace('_concat_out.mp4',
                                                                                                  '_concat_out_audio.mp4')))
@@ -270,6 +271,10 @@ class CVVideoLoader(object, ):
 
     def __enter__(self):
         self.cap = cv2.VideoCapture(self.video_p)
+        self.fps = self.cap.get(cv2.CAP_PROP_FPS)
+        self.size = (int(self.cap.get(cv2.CAP_PROP_FRAME_WIDTH)),
+                     int(self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT)))
+        self.frames_num = self.cap.get(7)
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
@@ -294,4 +299,9 @@ class CVVideoMaker(object, ):
         if not output_video_path:
             output_video_path = str(Path(frame_path_name).parent / 'output.mp4')
         os_call(
-            'ffmpeg -f image2 -i {} -vcodec libx264 -vf "pad=ceil(iw/2)*2:ceil(ih/2)*2" -r {} {}'.format(frame_path_name, frame_rate, output_video_path))
+            'ffmpeg -f image2 -i {} -vcodec libx264 -vf "pad=ceil(iw/2)*2:ceil(ih/2)*2" -r {} {}'.format(
+                frame_path_name, frame_rate, output_video_path))
+
+'''
+ffmpeg -y -threads 4 -start_number 0 -r 30 -i vis_results/dancecut_pare.mp4_output_temp/%06d.png -frames:v 900 -profile:v baseline -level 3.0 -c:v libx264 -pix_fmt yuv420p -an -v error -loglevel error vis_results/dancecut_pare.mp4
+'''

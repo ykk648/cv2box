@@ -14,6 +14,13 @@ pip install cv2box[full]
 git clone git@github.com:ykk648/cv2box.git --depth 1
 ```
 
+```python
+# Example
+from cv2box import CVImage
+img_in = 'img path' # or img_in = cv2.imread('img path')
+img_bgr = CVImage(img_in).bgr
+CVImage(img_in).resize(256,256).show()
+```
 
 A gather of tools or funcs frequently using in my work.
 
@@ -23,7 +30,7 @@ Now including these functions:
 
 ### cv ops
 
-- [CVImage](./cv_ops#cv-image) , a image class support multi format convert, usage: todo
+- [CVImage](./cv_ops#cv-image) , a image class support multi format convert.
 
 - [CVVideo](./cv_ops#cv-video), a video class support multi kinds of ops.
 

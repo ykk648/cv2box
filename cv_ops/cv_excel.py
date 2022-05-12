@@ -3,13 +3,12 @@
 # @Author : ykk648
 # @Project : https://github.com/ykk648/cv2box
 from pathlib import Path
-import openpyxl.drawing.image as openpyxl_image
-from openpyxl import load_workbook, Workbook
 
 
 class CVExcel:
     def __init__(self, xlsx_path):
 
+        from openpyxl import load_workbook, Workbook
         if Path(xlsx_path).exists():
             self.wb = load_workbook(xlsx_path)
         else:
@@ -26,7 +25,7 @@ class CVExcel:
         self.sheet.row_dimensions[int(location[1:])].height = size[1]
 
     def insert_image(self, insert_location, image_path, image_new_size=None):
-
+        import openpyxl.drawing.image as openpyxl_image
         img = openpyxl_image.Image(image_path)
 
         if image_new_size:

@@ -6,7 +6,7 @@ import cv2
 import numpy as np
 import base64
 import io
-from pathlib import PosixPath
+from pathlib import PosixPath, Path
 
 """
 skimage and pillow read image based uint8 and RGB mode
@@ -55,14 +55,14 @@ class ImageBasic:
         from PIL import Image
         return Image.fromarray(cv2.cvtColor(self.cv_image, cv2.COLOR_BGR2RGB))
 
-    def resize(self, size):
+    def resize(self, size, interpolation=cv2.INTER_LINEAR):
         if type(size) == tuple:
             if size != self.cv_image.shape[:-1]:
                 # cv2 resize function always returns a new Mat object.
                 self.cv_image = cv2.resize(self.cv_image, size)
         elif type(size) == int:
             if size != self.cv_image.shape[0]:
-                self.cv_image = cv2.resize(self.cv_image, (size, size))
+                self.cv_image = cv2.resize(self.cv_image, (size, size), interpolation=interpolation)
         else:
             raise 'Check the size input !'
         return self
@@ -86,8 +86,13 @@ class ImageBasic:
         cv2.imshow(window_name, self.cv_image)
         cv2.waitKey(wait_time)
 
-    def save(self, img_save_p):
-        cv2.imwrite(img_save_p, self.cv_image)
+    def save(self, img_save_p, compress=False):
+        if not compress:
+            cv2.imwrite(img_save_p, self.cv_image)
+        else:
+            suffix = Path(img_save_p).suffix
+            assert suffix not in img_save_p[:-len(suffix)]
+            cv2.imwrite(img_save_p.replace(suffix, 'jpg'), self.cv_image)
 
 
 class CVImage(ImageBasic):
