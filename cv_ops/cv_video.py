@@ -132,20 +132,24 @@ class CVVideo:
             self.video_dir + '/' + self.prefix + '_reverse_out')
         os_call(command)
 
-    def video_2_frame(self, interval=1, out_path=None, compress=False):
+    def video_2_frame(self, interval=1, out_path=None, compress=False, verbose=True):
+        suffix = Path(self.video_path).suffix
+        # print(suffix)
         if out_path is None:
-            save_path = self.video_path.split('.mp4')[0] + '/'
+            save_path = self.video_path.split(suffix)[0] + '/'
         else:
             save_path = out_path + '/'
 
         is_exists = os.path.exists(save_path)
         if not is_exists:
             os.makedirs(save_path)
-            print('path of %s is build' % save_path)
+            if verbose:
+                print('path of %s is build' % save_path)
         else:
             shutil.rmtree(save_path)
             os.makedirs(save_path)
-            print('path of %s already exist and rebuild' % save_path)
+            if verbose:
+                print('path of %s already exist and rebuild' % save_path)
 
         # 开始读视频
         video_capture = cv2.VideoCapture(self.video_path)
@@ -157,7 +161,8 @@ class CVVideo:
             i += 1
             # print(frame)
             if not success:
-                print('done!')
+                if verbose:
+                    print('done!')
                 break
             if i % interval == 0:
                 # 保存图片
@@ -167,7 +172,8 @@ class CVVideo:
                 else:
                     save_name = save_path + str(j) + '_' + str(i) + '.png'
                 cv2.imwrite(save_name, frame)
-                print('image of %s is saved' % save_name)
+                if verbose:
+                    print('image of %s is saved' % save_name)
         video_capture.release()
 
     def resize_video(self, out_size=(768, 1024), inplace=False):
@@ -194,9 +200,7 @@ class CVVideo:
             os.system('rm {} &'.format(self.video_path))
 
     def video_concat(self, video_path_2, concat_mode=None, copy_audio=True):
-        if concat_mode is None:
-            print('Need name concat_mode to \'vstack\' or \'hstack\' !')
-            return
+        assert concat_mode in ['vstack', 'hstack'], 'Need name concat_mode to \'vstack\' or \'hstack\' !'
         img = None
         reader1 = cv2.VideoCapture(self.video_path)
         fps = reader1.get(cv2.CAP_PROP_FPS)
@@ -301,6 +305,7 @@ class CVVideoMaker(object, ):
         os_call(
             'ffmpeg -f image2 -i {} -vcodec libx264 -vf "pad=ceil(iw/2)*2:ceil(ih/2)*2" -r {} {}'.format(
                 frame_path_name, frame_rate, output_video_path))
+
 
 '''
 ffmpeg -y -threads 4 -start_number 0 -r 30 -i vis_results/dancecut_pare.mp4_output_temp/%06d.png -frames:v 900 -profile:v baseline -level 3.0 -c:v libx264 -pix_fmt yuv420p -an -v error -loglevel error vis_results/dancecut_pare.mp4

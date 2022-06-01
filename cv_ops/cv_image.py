@@ -85,6 +85,11 @@ class ImageBasic:
         cv2.namedWindow(window_name, 0)
         cv2.imshow(window_name, self.cv_image)
         cv2.waitKey(wait_time)
+        # key = cv2.waitKey(wait_time) & 0xFF
+        # # check for 'q' key-press
+        # if key == ord("q"):
+        #     # if 'q' key-pressed break out
+        #     return False
 
     def save(self, img_save_p, compress=False):
         if not compress:
