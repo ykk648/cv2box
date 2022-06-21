@@ -132,7 +132,22 @@ class CVVideo:
             self.video_dir + '/' + self.prefix + '_reverse_out')
         os_call(command)
 
-    def video_2_frame(self, interval=1, out_path=None, compress=False, verbose=True):
+    def video_2_frame(self, per_sec=None, out_path=None, compress=False, verbose=True):
+        if per_sec is None:
+            cap = cv2.VideoCapture(self.video_path)
+            per_sec = cap.get(cv2.CAP_PROP_FPS)
+            cap.release()
+        suffix = Path(self.video_path).suffix
+        # print(suffix)
+        if out_path is None:
+            save_path = self.video_path.split(suffix)[0] + '/'
+            Path.mkdir(Path(save_path), exist_ok=True)
+        else:
+            save_path = out_path + '/'
+        command = 'ffmpeg -i {} -r {} -q:v 2 -f image2 {}%08d.jpg'.format(self.video_path, per_sec, save_path)
+        os_call(command)
+
+    def video_2_frame_cv(self, interval=1, out_path=None, compress=False, verbose=True):
         suffix = Path(self.video_path).suffix
         # print(suffix)
         if out_path is None:
@@ -303,8 +318,9 @@ class CVVideoMaker(object, ):
         if not output_video_path:
             output_video_path = str(Path(frame_path_name).parent / 'output.mp4')
         os_call(
-            'ffmpeg -f image2 -i {} -vcodec libx264 -vf "pad=ceil(iw/2)*2:ceil(ih/2)*2" -r {} {}'.format(
-                frame_path_name, frame_rate, output_video_path))
+            'ffmpeg -framerate {} -i {} -c:a copy -shortest -c:v libx264 -pix_fmt yuv420p {}'.format(
+                # 'ffmpeg -f image2 -i {} -vcodec libx264 -vf "pad=ceil(iw/2)*2:ceil(ih/2)*2,fps={},format=yuv420p" {}'.format(
+                frame_rate, frame_path_name, output_video_path))
 
 
 '''

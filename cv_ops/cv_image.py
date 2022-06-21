@@ -2,6 +2,7 @@
 # @Time : 2021/11/19
 # @Author : ykk648
 # @Project : https://github.com/ykk648/cv2box
+import os
 import cv2
 import numpy as np
 import base64
@@ -91,13 +92,15 @@ class ImageBasic:
         #     # if 'q' key-pressed break out
         #     return False
 
-    def save(self, img_save_p, compress=False):
+    def save(self, img_save_p, compress=False, create_path=False):
+        if create_path:
+            os.makedirs(str(Path(img_save_p).parent), exist_ok=True)
         if not compress:
             cv2.imwrite(img_save_p, self.cv_image)
         else:
             suffix = Path(img_save_p).suffix
             assert suffix not in img_save_p[:-len(suffix)]
-            cv2.imwrite(img_save_p.replace(suffix, 'jpg'), self.cv_image)
+            cv2.imwrite(img_save_p.replace(suffix, '.jpg'), self.cv_image)
 
 
 class CVImage(ImageBasic):

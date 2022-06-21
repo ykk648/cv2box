@@ -7,6 +7,20 @@ import time
 from pathlib import Path
 from importlib import import_module
 import warnings
+import sys
+
+
+def safe_cv_pyqt5():
+    ci_build_and_not_headless = False
+    try:
+        from cv2.version import ci_build, headless
+        ci_and_not_headless = ci_build and not headless
+    except:
+        pass
+    if sys.platform.startswith("linux") and ci_and_not_headless:
+        os.environ.pop("QT_QPA_PLATFORM_PLUGIN_PATH")
+    if sys.platform.startswith("linux") and ci_and_not_headless:
+        os.environ.pop("QT_QPA_FONTDIR")
 
 
 def os_call(command):
@@ -89,7 +103,7 @@ def get_path_by_ext(this_dir, ext_list=None):
     if ext_list is None:
         print('Use image ext as default !')
         ext_list = [".jpg", ".png", ".JPG", ".webp", ".jpeg"]
-    return [p for p in Path(this_dir).rglob('*') if p.suffix in ext_list]
+    return sorted([p for p in Path(this_dir).rglob('*') if p.suffix in ext_list])
 
 
 def try_import(pkg_name, warn_message=None):
