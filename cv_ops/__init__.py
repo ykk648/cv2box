@@ -8,4 +8,5 @@ from .cv_file import CVFile
 from .cv_excel import CVExcel
 from .cv_folder import CVFolder
 from .cv_video import CVVideo, CVVideoLoader, CVVideoMaker
+from .cv_bbox import CVBbox
 

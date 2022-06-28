@@ -303,6 +303,11 @@ class CVVideoLoader(object, ):
         return int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
     def get(self):
+        """
+
+        Returns: success, frame
+
+        """
         return self.cap.read()
 
 

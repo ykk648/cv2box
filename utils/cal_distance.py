@@ -4,8 +4,15 @@ from .util import np_norm
 
 class CalDistance:
     def __init__(self, vector1=None, vector2=None):
-        self.vector1 = vector1
-        self.vector2 = vector2
+        if isinstance(vector1, list):
+            self.vector1 = np.array(vector1)
+        else:
+            self.vector1 = vector1
+
+        if isinstance(vector2, list):
+            self.vector2 = np.array(vector2)
+        else:
+            self.vector2 = vector2
 
     def euc(self):
         return np.sqrt(np.sum(np.square(self.vector1 - self.vector2)))

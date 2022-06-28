@@ -7,6 +7,7 @@ from pathlib import Path
 import json
 import numpy as np
 import os
+import base64
 
 
 def data_resolve(data_in, iter_times, dummy):
@@ -59,10 +60,21 @@ class CVFile:
                 self.file_data = h5py.File(self.file_path, "r")
             elif self.suffix == '.npy':
                 self.file_data = np.load(self.file_path, allow_pickle=True)
+            elif self.suffix == '.yaml':
+                import yaml
+                with open(file_path, 'rb') as f:
+                    self.file_data = yaml.safe_load(f)
 
     @property
     def data(self):
         return self.file_data
+
+    @property
+    def base64(self):
+        return base64.b64encode(str(self.file_data).encode("utf-8"))
+
+    def from_base64(self, base64_data):
+        self.file_data = str(base64.b64decode(base64_data), 'UTF-8')
 
     def show(self, iter_times=3):
         data_resolve(self.file_data, iter_times, iter_times)
@@ -86,6 +98,12 @@ class CVFile:
     def npz_write(self, data_in):
         assert type(data_in) is dict
         np.savez(self.file_path, data_in)
+
+    def yaml_dump(self, data_in):
+        assert type(data_in) is dict
+        import yaml
+        with open(self.file_path, 'w', encoding='utf-8') as f:
+            yaml.dump(data_in, f)
 
 
 if __name__ == '__main__':

@@ -24,8 +24,6 @@ CVImage(img_in).resize(256,256).show()
 
 A gather of tools or funcs frequently using in my work.
 
-more info and code example plz read [wiki](https://github.com/ykk648/cv2box/wiki)
-
 Now including these functions:
 
 ### cv ops
@@ -40,11 +38,18 @@ Now including these functions:
 
 - [CVExcel](./cv_ops#cv-excel) , basic ops for insert data to excel file.
 
+- [CVBbox](./cv_ops) , different bbox filter.
+
+- [CVRotate](./cv_ops) , under dev.
+
+### cv gears
+
+- [CV threads parts](./cv_gears#CV-Threads-Parts) , fast construct your multithread AI program.
+- [CV video thread](./cv_gears#CV-Video-Thread) , give a video path to get a frame thread.
 
 ### code templates
 
 - multiprocess example by concurrent
-- [multiprocess factory & consumer](./code_templates#Multiprocess)
 - keyboard listener in separate thread
 - full-stack web demo for deep learning http distribute
 

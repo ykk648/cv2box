@@ -141,3 +141,12 @@ cve.insert_image('A1', image_path='test.jpg', image_new_size=(256,256))
 cve.insert_words('B2', 'this is test words.')
 ```
 
+#### CVBbox
+
+filter bboxes by center/area/center+area condition.
+
+```python
+from cv2box import CVBbox
+boxes = [[],[]]
+boxes_result = CVBbox(boxes).area_center_filter(frame.shape, max_num=1)
+```

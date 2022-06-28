@@ -18,6 +18,9 @@ using opencv as the default image read method
 
 class ImageBasic:
     def __init__(self, image_in, image_format, image_size):
+        if image_in is None:
+            self.cv_image = None
+            return
         if isinstance(image_in, PosixPath):
             image_in = str(image_in)
         if isinstance(image_in, str) and image_format == 'cv2':
@@ -69,20 +72,79 @@ class ImageBasic:
         return self
 
     def resize_keep_ratio(self, target_size, pad_value=(0, 0, 0)):
-        old_size = self.cv_image.shape[0:2]
+        old_size = self.cv_image.shape[0:2][::-1]
         # ratio = min(float(target_size)/(old_size))
         ratio = min(float(target_size[i]) / (old_size[i]) for i in range(len(old_size)))
         new_size = tuple([int(i * ratio) for i in old_size])
-        self.cv_image = cv2.resize(self.cv_image, (new_size[1], new_size[0]))
-        pad_w = target_size[1] - new_size[1]
-        pad_h = target_size[0] - new_size[0]
+        self.cv_image = cv2.resize(self.cv_image, (new_size[0], new_size[1]))
+        pad_w = target_size[0] - new_size[0]
+        pad_h = target_size[1] - new_size[1]
         top, bottom = pad_h // 2, pad_h - (pad_h // 2)
         left, right = pad_w // 2, pad_w - (pad_w // 2)
         self.cv_image = cv2.copyMakeBorder(self.cv_image, top, bottom, left, right, cv2.BORDER_CONSTANT, None,
                                            pad_value)
         return self.cv_image, ratio, pad_w, pad_h
 
-    def show(self,  wait_time=0, window_name='test'):
+    def crop_keep_ratio(self, box, target_size, padding_ratio=1.25, pad_value=(0, 0, 0)):
+        """
+
+        Args:
+            box: [x1,y1,x2,y2]
+            target_size: (w,h)
+            pad_value: cv defaule=0
+
+        Returns:
+
+        """
+        assert padding_ratio > 1
+        image_h, image_w = self.cv_image.shape[:2]
+
+        box_w = box[2] - box[0]
+        box_h = box[3] - box[1]
+        aspect_ratio = target_size[0] / target_size[1]
+
+        if box_w > aspect_ratio * box_h:
+            pad_w = box_w * ((padding_ratio - 1) / 2)
+            pad_h = ((box_w + pad_w * 2) * 1.0 / aspect_ratio - box_h) / 2
+        elif box_w < aspect_ratio * box_h:
+            pad_h = box_h * ((padding_ratio - 1) / 2)
+            pad_w = ((box_h + pad_h * 2) * aspect_ratio - box_w) / 2
+
+        top, bottom = int(box[1] - pad_h), int(box[3] + pad_h)
+        left, right = int(box[0] - pad_w), int((bottom - top) * aspect_ratio + int(box[0] - pad_w))
+
+        border_top = 0
+        border_bottom = 0
+        border_left = 0
+        border_right = 0
+        if top < 0:
+            border_top = -top
+        if left < 0:
+            border_left = -left
+        if bottom > image_h:
+            border_bottom = bottom - image_h
+        if right > image_w:
+            border_right = right - image_w
+
+        self.cv_image = cv2.copyMakeBorder(self.cv_image, border_top, border_bottom, border_left, border_right,
+                                           cv2.BORDER_CONSTANT, None, pad_value)
+        self.cv_image = self.cv_image[top:bottom, left:right, :]
+        self.cv_image = self.resize(target_size).bgr
+        ratio = target_size[1] / (bottom - top)
+
+        return self.cv_image, ratio, left, top
+
+    @staticmethod
+    def recover_from_loc(loc, ratio, pad_w, pad_h):
+        assert type(loc) == list and len(loc) == 2
+        if pad_w == 0:
+            y_pad = pad_h // 2
+            return [round(loc[0] * 1 / ratio), round((loc[1] - y_pad) * 1 / ratio)]
+        if pad_h == 0:
+            x_pad = pad_w // 2
+            return [round((loc[0] - x_pad) * 1 / ratio), round(loc[1] * 1 / ratio)]
+
+    def show(self, wait_time=0, window_name='test'):
         cv2.namedWindow(window_name, 0)
         cv2.imshow(window_name, self.cv_image)
         cv2.waitKey(wait_time)
@@ -91,6 +153,23 @@ class ImageBasic:
         # if key == ord("q"):
         #     # if 'q' key-pressed break out
         #     return False
+
+    def crop_margin(self, box, margin_ratio=0.3):
+        """
+        :param box: x1,y1,x2,y2
+        :param margin_ratio:
+        :return:
+        """
+        box_width = box[2] - box[0]
+        box_height = box[3] - box[1]
+        height, width = self.cv_image.shape[0:2]
+
+        margin = int(margin_ratio * box_height)  # if use loose crop, change 0.3 to 1.0
+
+        # new_box = [max(box[0] - margin, 0), max(box[1] - margin, 0),
+        #            min(box[2] + margin, width), min(box[3] + margin, height)]
+        return self.cv_image[max(box[1] - margin, 0):min(box[3] + margin, height),
+               max(box[0] - margin, 0):min(box[2] + margin, width), :]
 
     def save(self, img_save_p, compress=False, create_path=False):
         if create_path:
