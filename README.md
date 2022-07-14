@@ -62,5 +62,6 @@ Now including these functions:
 
 - fps counter
 - apscheduler
+- cal distances
 
 ### AI power (moved to [AI_power](https://github.com/ykk648/AI_power))
