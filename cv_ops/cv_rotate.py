@@ -186,12 +186,10 @@ class CVRotate:
             angle_axis_torch = self.__quaternion_to_angle_axis_torch(quat_torch)
             return angle_axis_torch.numpy()
 
-    @property
     def quaternion(self):
         if self.rotate_format == 'angle_axis':
             return self.angle_axis_to_quaternion(self.rotate)
 
-    @property
     def angle_axis(self):
         if self.rotate_format == 'quaternion':
             return self.quaternion_to_angle_axis(self.rotate)

@@ -60,7 +60,8 @@ class CVBbox:
         Returns:
 
         """
-        box_area_dis = []
+        if len(self.bbox_list) == 0:
+            return [[]]
         box_results = []
         dummy1 = []
         dummy2 = []
@@ -70,7 +71,7 @@ class CVBbox:
                                       [image_shape[1] / 2, image_shape[0] / 2]).euc())
             dummy2.append((box[2] - box[0]) * (box[3] - box[1]))
 
-        box_area_dis = Normalize(dummy1).np_norm() + Normalize(dummy2).np_norm()
+        box_area_dis = Normalize(dummy2).np_norm() - Normalize(dummy1).np_norm()
         for i in range(max_num):
             aim_ind = np.argmax(np.array(box_area_dis))
 

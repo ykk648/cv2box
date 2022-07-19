@@ -46,15 +46,12 @@ class ImageBasic:
         else:
             raise 'Can not find image_format ！'
 
-    @property
     def rgb(self):
         return cv2.cvtColor(self.cv_image, cv2.COLOR_BGR2RGB)
 
-    @property
     def bgr(self):
         return self.cv_image
 
-    @property
     def pillow(self):
         from PIL import Image
         return Image.fromarray(cv2.cvtColor(self.cv_image, cv2.COLOR_BGR2RGB))
@@ -91,6 +88,7 @@ class ImageBasic:
         Args:
             box: [x1,y1,x2,y2]
             target_size: (w,h)
+            padding_ratio:
             pad_value: cv defaule=0
 
         Returns:
@@ -103,35 +101,40 @@ class ImageBasic:
         box_h = box[3] - box[1]
         aspect_ratio = target_size[0] / target_size[1]
 
+        # 对四周进行padding
         if box_w > aspect_ratio * box_h:
             pad_w = box_w * ((padding_ratio - 1) / 2)
             pad_h = ((box_w + pad_w * 2) * 1.0 / aspect_ratio - box_h) / 2
-        elif box_w < aspect_ratio * box_h:
+        else:
             pad_h = box_h * ((padding_ratio - 1) / 2)
             pad_w = ((box_h + pad_h * 2) * aspect_ratio - box_w) / 2
-
         top, bottom = int(box[1] - pad_h), int(box[3] + pad_h)
         left, right = int(box[0] - pad_w), int((bottom - top) * aspect_ratio + int(box[0] - pad_w))
 
+        # 旧坐标系下依据padding结果扩充边界
         border_top = 0
         border_bottom = 0
         border_left = 0
         border_right = 0
-        if top < 0:
-            border_top = -top
-        if left < 0:
-            border_left = -left
         if bottom > image_h:
             border_bottom = bottom - image_h
         if right > image_w:
             border_right = right - image_w
-
+        if top < 0:
+            border_top = -top
+            bottom += -top  # 新坐标系bottom
+        if left < 0:
+            border_left = -left
+            right += -left  # 新坐标系right
         self.cv_image = cv2.copyMakeBorder(self.cv_image, border_top, border_bottom, border_left, border_right,
                                            cv2.BORDER_CONSTANT, None, pad_value)
-        self.cv_image = self.cv_image[top:bottom, left:right, :]
+        # 新坐标系下，top和left不存在负数
+        self.cv_image = self.cv_image[max(top, 0):bottom, max(left, 0):right, :]
         self.cv_image = self.resize(target_size).bgr
-        ratio = target_size[1] / (bottom - top)
+        # 假如top为负，bottom已经加过top
+        ratio = target_size[1] / (bottom - max(top, 0))
 
+        # 保留旧坐标系下的left top用于坐标还原
         return self.cv_image, ratio, left, top
 
     @staticmethod
@@ -189,7 +192,6 @@ class CVImage(ImageBasic):
         self.input_std = self.input_mean = self.input_size = None
 
     # ===== for image transfer =====
-    @property
     def base64(self):
         """
         :return: jpg format base64 code
@@ -198,7 +200,6 @@ class CVImage(ImageBasic):
         image_code = str(base64.b64encode(image))[2:-1]
         return 'data:image/jpg;base64,' + image_code
 
-    @property
     def bytes(self):
         """
         fast enough for video real-time steam process
@@ -206,7 +207,6 @@ class CVImage(ImageBasic):
         """
         return self.cv_image.tobytes()
 
-    @property
     def format_bytes(self, image_format='png'):
         """
         convenience but low speed
@@ -222,7 +222,6 @@ class CVImage(ImageBasic):
         self.input_size = input_size
         return self
 
-    @property
     def blob_rgb(self):
         assert self.input_std and self.input_mean and self.input_size, 'Use set_blob first!'
         if not isinstance(self.cv_image, list):
@@ -266,7 +265,6 @@ class CVImage(ImageBasic):
             ])
         return self
 
-    @property
     def tensor(self):
         import torch
         assert self.transform is not None, 'Use set_transform first !'

@@ -51,9 +51,12 @@ class Factory(Process):
                 self.queue_list[0].put(None)
                 break
 
-            something_out = self.forward_func()
+            try:
+                something_out = self.forward_func()
+            except Exception as e:
+                print('{} raise error {}'.format(self.process_name, e))
 
-            if self.fps_counter and not something_out:
+            if self.fps_counter:
                 counter += 1
                 time_sum += (time.time() - start_time)
                 if time_sum > 10:
@@ -118,9 +121,12 @@ class Linker(Process):
             if self.exit_signal:
                 break
 
-            something_out = self.forward_func(something_in)
+            try:
+                something_out = self.forward_func(something_in)
+            except Exception as e:
+                print('{} raise error {}'.format(self.process_name, e))
 
-            if self.fps_counter and not something_out:
+            if self.fps_counter:
                 counter += 1
                 time_sum += (time.time() - start_time)
                 if time_sum > 10:
@@ -139,7 +145,8 @@ class Linker(Process):
                         # do your judge here, for example
                         queue_full_counter += 1
                         if (time.time() - start_time) > 10:
-                            print('{} Queue full {} times'.format(self.process_name, queue_full_counter))
+                            print('{} {} Queue full {} times'.format(self.process_name, self.__class__.__name__,
+                                                                     queue_full_counter))
 
 
 class Consumer(Process):
@@ -185,7 +192,10 @@ class Consumer(Process):
             if self.exit_signal:
                 break
 
-            self.forward_func(something_in)
+            try:
+                self.forward_func(something_in)
+            except Exception as e:
+                print('{} raise error {}'.format(self.process_name, e))
 
             if self.fps_counter:
                 counter += 1

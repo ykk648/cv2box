@@ -15,7 +15,6 @@ class CVExcel:
             self.wb = Workbook()
         self.sheet = self.wb.active
 
-    @property
     def create_sheet(self):
         self.sheet = self.wb.create_sheet(title="Data")
         return self.sheet

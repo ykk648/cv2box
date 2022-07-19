@@ -69,7 +69,6 @@ class CVFile:
     def data(self):
         return self.file_data
 
-    @property
     def base64(self):
         return base64.b64encode(str(self.file_data).encode("utf-8"))
 
@@ -82,7 +81,7 @@ class CVFile:
     def pickle_write(self, data_in):
         os.makedirs(str(Path(self.file_path).parent), exist_ok=True)
         with open(self.file_path, 'wb') as f:
-            pickle.dump(data_in, f)
+            pickle.dump(data_in, f, protocol=pickle.HIGHEST_PROTOCOL)
 
     def json_write(self, data_in):
         for k, v in data_in.items():
