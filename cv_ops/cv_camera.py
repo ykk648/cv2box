@@ -1,7 +1,7 @@
 # -- coding: utf-8 --
 # @Time : 2022/7/15
 # @Author : ykk648
-# @Project : https://github.com/ykk648/AI_power
+# @Project : https://github.com/ykk648/cv2box
 
 import numpy as np
 from cv2box.cv_ops.cv_file import CVFile

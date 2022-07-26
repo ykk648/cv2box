@@ -10,16 +10,16 @@ from multiprocessing.dummy import Process, Queue  # multi thread
 import queue
 import datetime
 
-# from ..cv_ops.cv_video import CVVideoLoader
 from cv2box.cv_gears.vidgear.camgear import CamGear
 from cv2box import CVImage
 
 
 class ReconnectingCamGear:
-    def __init__(self, source_list, reset_attempts=50, reset_delay=5):
+    def __init__(self, source_list, reset_attempts=50, reset_delay=5, multi_stream_offset=True):
         self.reset_attempts = reset_attempts
         self.reset_delay = reset_delay
         self.source_list = source_list
+        self.multi_stream_offset = multi_stream_offset
 
         self.input_option_dict = {
             # 'CAP_PROP_FRAME_WIDTH': 1280,
@@ -29,7 +29,7 @@ class ReconnectingCamGear:
             # 'CAP_PROP_FOURCC': cv2.VideoWriter_fourcc('M', 'P', '4', '2'),
             # 'CAP_PROP_FOURCC': cv2.VideoWriter_fourcc('X', 'V', 'I', 'D'),
             # 'CAP_PROP_FOURCC': cv2.VideoWriter_fourcc('H', '2', '6', '4'),
-            'THREADED_QUEUE_MODE': True,  # True 读取视频文件内存爆炸
+            'THREADED_QUEUE_MODE': True,
         }
 
         # start_time = time.time()
@@ -42,11 +42,11 @@ class ReconnectingCamGear:
         self.sourceD = CamGear(source=self.source_list[3], logging=True, time_delay=0, **self.input_option_dict).start()
         d_time = self.sourceD.get_first_grab_time()
 
-        self.pass_frame_number_a = round((d_time - a_time) / (1 / 30))  # int round
-        self.pass_frame_number_b = round((d_time - b_time) / (1 / 30))
-        self.pass_frame_number_c = round((d_time - c_time) / (1 / 30))
-
-        print('frame offset: ', self.pass_frame_number_a, self.pass_frame_number_b, self.pass_frame_number_c)
+        if self.multi_stream_offset:
+            self.pass_frame_number_a = round((d_time - a_time) / (1 / 30))  # int round
+            self.pass_frame_number_b = round((d_time - b_time) / (1 / 30))
+            self.pass_frame_number_c = round((d_time - c_time) / (1 / 30))
+            print('frame offset: ', self.pass_frame_number_a, self.pass_frame_number_b, self.pass_frame_number_c)
 
         self.running = True
         self.first = True
@@ -56,7 +56,7 @@ class ReconnectingCamGear:
         if self.sourceA is None or self.sourceB is None:
             return None
         if self.running and self.reset_attempts > 0:
-            if self.first:
+            if self.first and self.offset:
                 # offset
                 while self.pass_frame_number_a > 0:
                     _ = self.sourceA.read()
@@ -115,16 +115,15 @@ class ReconnectingCamGear:
 
 class CVMultiVideoThread(Process):
 
-    def __init__(self, video_in_path_list, queue_list: list, silent=False, block=True, fps_counter=False,
-                 process_name='CVMultiVideoThread'):
+    def __init__(self, video_in_path_list, queue_list: list, multi_stream_offset=True, silent=False, block=True,
+                 fps=None, fps_counter=False, process_name='CVMultiVideoThread'):
         super().__init__()
-        # for video_in_path in video_in_path_list:
-        #     assert Path(video_in_path).exists()
         assert len(queue_list) == 1
         assert len(video_in_path_list) == 4
         self.video_in_path_list = video_in_path_list
 
-        self.rcg = ReconnectingCamGear(video_in_path_list, reset_attempts=20, reset_delay=5, )
+        self.rcg = ReconnectingCamGear(video_in_path_list, reset_attempts=20, reset_delay=5,
+                                       multi_stream_offset=multi_stream_offset)
 
         self.queue_list = queue_list
         self.silent = silent
@@ -132,6 +131,7 @@ class CVMultiVideoThread(Process):
         self.block = block
         self.process_name = process_name
         self.pid = os.getpid()
+        self.fps = fps
         if not self.silent:
             print('init {} {}, pid is {}.'.format(self.process_name, self.__class__.__name__, self.pid))
 
@@ -143,6 +143,7 @@ class CVMultiVideoThread(Process):
         start_time = time.time()
 
         while True:
+            one_start_time = time.time()
             frameA_, frameB_, frameC_, frameD_ = self.rcg.read()
 
             if frameA_ is None or frameB_ is None or frameC_ is None or frameD_ is None:
@@ -173,7 +174,8 @@ class CVMultiVideoThread(Process):
                     queue_full_counter += 1
                     if (time.time() - start_time) > 10:
                         print('{} Queue full {} times'.format(self.process_name, queue_full_counter))
-
+            if self.fps is not None and self.fps > 0:
+                time.sleep(np.max([1 / self.fps - (time.time() - one_start_time), 0]))
         # self.queue_list[0].put(None)
         # if not self.silent:
         #     print('Video load done, {} exit'.format(self.process_name))

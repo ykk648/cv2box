@@ -1,4 +1,4 @@
-### CV Image
+### CVImage
 
 Human-like API to unite different image format, convenient way to convert/show/save one pic or even pic path.
 
@@ -31,7 +31,7 @@ onnx_input = CVImage(img_in).set_blob(127.5,127.5,(112,112)).blob_rgb
 
 ```
 
-### CV Video
+### CVVideo
 
 Basic video operate process using cv2 & ffmpeg.
 
@@ -59,7 +59,7 @@ cvvm = CVVideoMaker().frame_2_video('frame_path/something_%d.jpg')
 ```
 
 
-### CV Queue
+### CVQueue
 
 A queue-like high-level class which can be used for two different python projects on same host machine.
 
@@ -102,7 +102,7 @@ while True:
     CVImage(frame_get).show()
 ```
 
-### CV File
+### CVFile
 
 Make pickle/txt/json/yaml be one CVFile.
 
@@ -126,7 +126,7 @@ CVFile(dummy_dict).json_write('write path')
 CVFile(dummy_numpy).pickle_write('write path')
 ```
 
-### CV Excel
+### CVExcel
 
 basic ops for insert data to excel file.
 
@@ -141,12 +141,29 @@ cve.insert_image('A1', image_path='test.jpg', image_new_size=(256,256))
 cve.insert_words('B2', 'this is test words.')
 ```
 
-#### CVBbox
+### CVBbox
 
 filter bboxes by center/area/center+area condition.
+
+#### example
 
 ```python
 from cv2box import CVBbox
 boxes = [[],[]]
 boxes_result = CVBbox(boxes).area_center_filter(frame.shape, max_num=1)
+```
+
+### CVCamera
+
+convert multical calibrate pkl to needed matrix
+
+#### example
+```python
+from cv2box import CVCamera
+pkl_p = 'multical_calibrate.pkl'
+cvc = CVCamera(pkl_p)
+print(cvc.world_view_extri_matrix())
+print(cvc.multi_cam_stack(cvc.pall_rotate()))
+print(cvc.intri_matrix())
+print(cvc.matrix_2_rt(cvc.world_view_extri_matrix()['cam1']))
 ```

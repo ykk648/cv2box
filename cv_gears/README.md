@@ -57,3 +57,15 @@ q1 = Queue(5)
 c1 = CVVideoThread(video_p, [q1], silent=False)
 c1.start()
 ```
+
+### CV Multi Video Thread
+
+Supply multiple video/stream read synchronous based on vidgear.
+
+```python
+from cv2box.cv_gears.cv_multi_video_thread import CVMultiVideoThread
+source_list = [0, 2, 4, 6]
+q1 = Queue(5)
+cvmt = CVMultiVideoThread(source_list, [q1])
+cvmt.start()
+```

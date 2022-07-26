@@ -284,6 +284,9 @@ class CVVideo:
 
 
 class CVVideoLoader(object, ):
+    """
+    based on OpenCV
+    """
 
     def __init__(self, video_p):
         self.video_p = video_p
@@ -309,6 +312,38 @@ class CVVideoLoader(object, ):
 
         """
         return self.cap.read()
+
+
+class CVVideoLoaderFF(object, ):
+    """
+    based on https://github.com/abhiTronix/deffcode, hope faster
+    """
+
+    def __init__(self, video_p):
+        self.video_p = video_p
+
+    def __enter__(self):
+        try:
+            from deffcode import FFdecoder
+        except:
+            print('CVVideoLoaderFF need deffcode !')
+        self.decoder = FFdecoder(self.video_p).formulate()
+        self.fps = self.decoder.metadata["source_video_framerate"]
+        self.size = self.decoder.metadata["source_video_resolution"]
+        self.frames_num = self.decoder.metadata["approx_video_nframes"]
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.decoder.terminate()
+
+    def __len__(self):
+        return int(self.decoder.metadata["approx_video_nframes"])
+
+    def get(self):
+        """
+        Returns: success, frame
+        """
+        return self.decoder.generateFrame()
 
 
 class CVVideoMaker(object, ):

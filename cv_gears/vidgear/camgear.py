@@ -329,7 +329,7 @@ class CamGear:
         # initialize queue for video files only
         if self.__threaded_queue_mode and isinstance(source, str):
             # define queue and assign it to global var
-            self.__queue = queue.Queue(maxsize=960)  # max bufferlen 96 to check overflow
+            self.__queue = queue.Queue(maxsize=96)  # max bufferlen 96 to check overflow
             # log it
             self.__logging and logger.debug(
                 "Enabling Threaded Queue Mode for the current video source!"

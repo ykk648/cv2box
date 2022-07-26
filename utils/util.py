@@ -2,12 +2,12 @@ import os
 import uuid
 import pickle
 import shutil
-import numpy as np
 import time
 from pathlib import Path
 from importlib import import_module
 import warnings
 import sys
+import numpy as np
 
 
 def safe_cv_pyqt5():
@@ -87,7 +87,7 @@ class MyFpsCounter(object, ):
         print('[{} fps: {fps}]'.format(self.flag, fps=1 / (time.time() - self.t0)))
 
 
-def mfc(flag=''):
+def mfc(flag='Your Func Name'):
     def decorator(f):
         def wrapper(*args, **kwargs):
             t0 = time.time()
@@ -99,11 +99,14 @@ def mfc(flag=''):
     return decorator
 
 
-def get_path_by_ext(this_dir, ext_list=None):
+def get_path_by_ext(this_dir, ext_list=None, sorted_by_stem=True):
     if ext_list is None:
         print('Use image ext as default !')
         ext_list = [".jpg", ".png", ".JPG", ".webp", ".jpeg"]
-    return sorted([p for p in Path(this_dir).rglob('*') if p.suffix in ext_list])
+    if sorted_by_stem:
+        return sorted([p for p in Path(this_dir).rglob('*') if p.suffix in ext_list], key=lambda x: int(x.stem))
+    else:
+        return [p for p in Path(this_dir).rglob('*') if p.suffix in ext_list]
 
 
 def try_import(pkg_name, warn_message=None):

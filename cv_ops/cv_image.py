@@ -49,6 +49,7 @@ class ImageBasic:
     def rgb(self):
         return cv2.cvtColor(self.cv_image, cv2.COLOR_BGR2RGB)
 
+    @property
     def bgr(self):
         return self.cv_image
 
@@ -71,16 +72,16 @@ class ImageBasic:
     def resize_keep_ratio(self, target_size, pad_value=(0, 0, 0)):
         old_size = self.cv_image.shape[0:2][::-1]
         # ratio = min(float(target_size)/(old_size))
-        ratio = min(float(target_size[i]) / (old_size[i]) for i in range(len(old_size)))
-        new_size = tuple([int(i * ratio) for i in old_size])
+        ratio_ = min(float(target_size[i]) / (old_size[i]) for i in range(len(old_size)))
+        new_size = tuple([int(i * ratio_) for i in old_size])
         self.cv_image = cv2.resize(self.cv_image, (new_size[0], new_size[1]))
-        pad_w = target_size[0] - new_size[0]
-        pad_h = target_size[1] - new_size[1]
-        top, bottom = pad_h // 2, pad_h - (pad_h // 2)
-        left, right = pad_w // 2, pad_w - (pad_w // 2)
+        pad_w_ = target_size[0] - new_size[0]
+        pad_h_ = target_size[1] - new_size[1]
+        top, bottom = pad_h_ // 2, pad_h_ - (pad_h_ // 2)
+        left, right = pad_w_ // 2, pad_w_ - (pad_w_ // 2)
         self.cv_image = cv2.copyMakeBorder(self.cv_image, top, bottom, left, right, cv2.BORDER_CONSTANT, None,
                                            pad_value)
-        return self.cv_image, ratio, pad_w, pad_h
+        return self.cv_image, ratio_, pad_w_, pad_h_
 
     def crop_keep_ratio(self, box, target_size, padding_ratio=1.25, pad_value=(0, 0, 0)):
         """
@@ -146,6 +147,24 @@ class ImageBasic:
         if pad_h == 0:
             x_pad = pad_w // 2
             return [round((loc[0] - x_pad) * 1 / ratio), round(loc[1] * 1 / ratio)]
+
+    def draw_landmarks(self, landmark_in_):
+        """
+
+        :param landmark_in_: list [x1,y1,x2,y2...] [[x1,y1],[x2,y2]] numpy array [[x1,y1],[x2,y2]]
+        :return:
+        """
+        if isinstance(landmark_in_, list):
+            if isinstance(landmark_in_[0], list):
+                landmark_in_ = np.array(landmark_in_)
+            else:
+                assert len(landmark_in_) % 2 == 0
+                landmark_in_ = np.array(landmark_in_).reshape((-1, 2))
+        image_copy = self.cv_image.copy()
+        cycle_line = int(self.cv_image.shape[0] / 100)
+        for i in range(landmark_in_.shape[0]):
+            cv2.circle(image_copy, (int(landmark_in_[i][0]), int(landmark_in_[i][1])), cycle_line, color=(0, 255, 0))
+        return image_copy
 
     def show(self, wait_time=0, window_name='test'):
         cv2.namedWindow(window_name, 0)
@@ -223,6 +242,11 @@ class CVImage(ImageBasic):
         return self
 
     def blob_rgb(self):
+        """
+
+        Returns: 1*3*size*size
+
+        """
         assert self.input_std and self.input_mean and self.input_size, 'Use set_blob first!'
         if not isinstance(self.cv_image, list):
             self.cv_image = [self.cv_image]

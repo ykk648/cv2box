@@ -1,10 +1,10 @@
 ## cv2box - cv toolbox
 
 ```shell
-# clean install - no other dependencies
+# RECOMMEND - inclue cv2/numpy/tqdm
 pip install cv2box
 
-# RECOMMEND - inclue cv2/numpy/.. 
+# clean install - no other dependencies
 pip install cv2box[light] 
 
 # full install - referring requirements.txt
@@ -27,25 +27,22 @@ A gather of tools or funcs frequently using in my work.
 Now including these functions:
 
 ### cv ops
-
-- [CVImage](./cv_ops#cv-image) , a image class support multi format convert.
-
-- [CVVideo](./cv_ops#cv-video), a video class support multi kinds of ops.
-
-- [CVQueue](./cv_ops#cv-queue) , A queue-like high-level class which can be used for two different python projects on same host machine.
-
-- [CVFile](./cv_ops#cv-file) , for multi-class file io.
-
-- [CVExcel](./cv_ops#cv-excel) , basic ops for insert data to excel file.
-
-- [CVBbox](./cv_ops) , different bbox filter.
-
+- [CVBbox](./cv_ops#cvbox) , different bbox filter.
+- [CVCamera](./cv_ops#cvcamera) , load [multical](https://github.com/makerdao/multicall) calibrate result and give any format of camera matrix.
+- [CVExcel](./cv_ops#cvexcel) , basic ops for insert data to excel file.
+- [CVFile](./cv_ops#cvfile) , for multi-class file io.
+- [CVFolder](./cv_ops) , higher level folder op to do batch file operate.
+- [CVImage](./cv_ops#cvimage) , a image class support multi format convert.
+- [CVQueue](./cv_ops#cvqueue) , queue-like high-level class which can be used for two different python projects communicate on same host machine.
 - [CVRotate](./cv_ops) , under dev.
+- [CVVideo](./cv_ops#cvvideo), a video class support multi kinds of ops.
+
 
 ### cv gears
 
 - [CV threads parts](./cv_gears#CV-Threads-Parts) , fast construct your multithread AI program.
 - [CV video thread](./cv_gears#CV-Video-Thread) , give a video path to get a frame thread.
+- [CV multi video thread](./cv_gears#CV-Multi-Video-Thread) , give a video path to get a frame thread.
 
 ### code templates
 

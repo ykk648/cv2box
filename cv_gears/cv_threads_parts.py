@@ -2,6 +2,7 @@
 # @Time : 2022/6/28
 # @Author : ykk648
 # @Project : https://github.com/ykk648/cv2box
+
 # from multiprocessing import Process, Lock, Queue # multi process
 from multiprocessing.dummy import Process, Queue  # multi thread
 import os

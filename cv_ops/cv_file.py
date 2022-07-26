@@ -60,7 +60,7 @@ class CVFile:
                 self.file_data = h5py.File(self.file_path, "r")
             elif self.suffix == '.npy':
                 self.file_data = np.load(self.file_path, allow_pickle=True)
-            elif self.suffix == '.yaml':
+            elif self.suffix == '.yaml' or self.suffix == '.yml':
                 import yaml
                 with open(file_path, 'rb') as f:
                     self.file_data = yaml.safe_load(f)
