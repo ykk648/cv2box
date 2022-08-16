@@ -1,5 +1,20 @@
+# -- coding: utf-8 --
+# @Time : 2022/8/16
+# @Author : ykk648
+# @Project : https://github.com/ykk648/cv2box
+
+
 import numpy as np
-from .util import np_norm
+
+
+# def np_norm(v):
+#     norm = np.linalg.norm(v)
+#     if norm == 0:
+#         return v
+#     return v / norm
+
+def np_norm(x):
+    return (x - np.average(x)) / np.std(x)
 
 
 class CalDistance:
@@ -37,3 +52,16 @@ class CalDistance:
         sqrt_sumxx = ne.evaluate('sqrt(sumxx)')
         sqrt_sumyy = ne.evaluate('sqrt(sumyy)')
         return ne.evaluate('(sumxy/sqrt_sumxx)/sqrt_sumyy')
+
+
+class Normalize:
+    def __init__(self, aim_in):
+        if isinstance(aim_in, list):
+            self.aim_in = np.array(aim_in)
+        else:
+            self.aim_in = aim_in
+
+    def np_norm(self):
+        if len(self.aim_in) == 1:
+            return self.aim_in
+        return (self.aim_in - np.min(self.aim_in)) / (np.max(self.aim_in) - np.min(self.aim_in))

@@ -132,7 +132,13 @@ class CVVideo:
             self.video_dir + '/' + self.prefix + '_reverse_out')
         os_call(command)
 
-    def video_2_frame(self, per_sec=None, out_path=None, compress=False, verbose=True):
+    def video_2_frame(self, per_sec=None, out_path=None, silent=False, rename=False):
+        """
+        :param per_sec: frame extract per sec
+        :param out_path:
+        :param rename: out_path include file rename part
+        :return:
+        """
         if per_sec is None:
             cap = cv2.VideoCapture(self.video_path)
             per_sec = cap.get(cv2.CAP_PROP_FPS)
@@ -143,9 +149,12 @@ class CVVideo:
             save_path = self.video_path.split(suffix)[0] + '/'
             Path.mkdir(Path(save_path), exist_ok=True)
         else:
-            save_path = out_path + '/'
+            if not rename:
+                save_path = out_path + '/'
+            else:
+                save_path = out_path
         command = 'ffmpeg -i {} -r {} -q:v 2 -f image2 {}%08d.jpg'.format(self.video_path, per_sec, save_path)
-        os_call(command)
+        os_call(command, silent=silent)
 
     def video_2_frame_cv(self, interval=1, out_path=None, compress=False, verbose=True):
         suffix = Path(self.video_path).suffix

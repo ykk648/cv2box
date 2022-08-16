@@ -4,3 +4,8 @@ opencv_python
 apscheduler
 numexpr
 h5py
+yaml
+aniposelib
+multical
+pynput
+

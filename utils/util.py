@@ -8,9 +8,14 @@ from importlib import import_module
 import warnings
 import sys
 import numpy as np
+import logging
 
 
 def safe_cv_pyqt5():
+    """
+    resolve conflict made by opencv-python & pyqt5
+    :return:
+    """
     ci_build_and_not_headless = False
     try:
         from cv2.version import ci_build, headless
@@ -23,9 +28,12 @@ def safe_cv_pyqt5():
         os.environ.pop("QT_QPA_FONTDIR")
 
 
-def os_call(command):
+def os_call(command, silent=False):
     print(command)
-    os.system(command)
+    if silent:
+        os.system(command + ' >/dev/null 2>&1')
+    else:
+        os.system(command)
 
 
 def make_random_name(suffix_or_name=None):
@@ -39,36 +47,15 @@ def flush_print(str_to_print):
     print("\r" + "{}".format(str_to_print), end="", flush=True)
 
 
-def pickle_load(pickle_path):
-    with open(pickle_path, 'rb') as f:
-        dummy = pickle.load(f)
-    return dummy
-
-
 def get_my_dir():
     dir_name, filename = os.path.split(os.path.abspath(__file__))
     return dir_name
 
 
-# def give_me_ai_power():
-#     shutil.copytree('{}/../AI_power'.format(get_my_dir()), './AI_power')
-
-
-def np_norm(x):
-    return (x - np.average(x)) / np.std(x)
-
-
-# def np_norm(v):
-#     norm = np.linalg.norm(v)
-#     if norm == 0:
-#         return v
-#     return v / norm
-
 class MyTimer(object):
     """
     timer
     """
-
     def __enter__(self):
         self.t0 = time.time()
 
@@ -88,6 +75,11 @@ class MyFpsCounter(object, ):
 
 
 def mfc(flag='Your Func Name'):
+    """
+    A decorator to achieve MyTimer function
+    :param flag:
+    :return:
+    """
     def decorator(f):
         def wrapper(*args, **kwargs):
             t0 = time.time()
@@ -95,7 +87,9 @@ def mfc(flag='Your Func Name'):
             res = f(*args, **kwargs)
             print('[{} {} fps: {fps}]'.format(flag, f.__name__, fps=1 / (time.time() - t0)))
             return res
+
         return wrapper
+
     return decorator
 
 
@@ -109,11 +103,21 @@ def get_path_by_ext(this_dir, ext_list=None, sorted_by_stem=True):
         return [p for p in Path(this_dir).rglob('*') if p.suffix in ext_list]
 
 
-def try_import(pkg_name, warn_message=None):
+# def try_import(pkg_name, warn_message=None):
+#     try:
+#         import_module(pkg_name)
+#         # exec('import ' + pkg_name)
+#     except ModuleNotFoundError:
+#         if not warn_message:
+#             warn_message = 'can not find package: {}, try install or reinstall it !'.format(pkg_name)
+#         warnings.warn(warn_message)
+#         pass
+
+
+def try_raise(cmd, warn_message=None, ignore_origin_exception=False):
     try:
-        import_module(pkg_name)
-    except ModuleNotFoundError:
-        if not warn_message:
-            warn_message = 'can not find package: {}, try install or reinstall it !'.format(pkg_name)
-        warnings.warn(warn_message)
-        pass
+        exec(cmd)
+    except Exception as e:
+        logger = logging.getLogger('cv2box')
+        if not ignore_origin_exception:
+            logger.error('got exception: {}, {}'.format(e, warn_message))

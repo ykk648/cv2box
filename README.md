@@ -40,25 +40,21 @@ Now including these functions:
 
 ### cv gears
 
-- [CV threads parts](./cv_gears#CV-Threads-Parts) , fast construct your multithread AI program.
+Now supports mode switch from multi-thread/multi-process/torch-process. 
+
+- [CV threads base](./cv_gears#CV-Threads-Base) , fast construct your multithread AI program.
 - [CV video thread](./cv_gears#CV-Video-Thread) , give a video path to get a frame thread.
-- [CV multi video thread](./cv_gears#CV-Multi-Video-Thread) , give a video path to get a frame thread.
+- [CV multi video thread](./cv_gears#CV-Multi-Video-Thread) , give multical video path to get a multi frame thread.
 
-### code templates
-
-- multiprocess example by concurrent
-- keyboard listener in separate thread
-- full-stack web demo for deep learning http distribute
 
 ### shell scripts
 
-- rsync between different servers
 - batch uncompress script support different types(zip tar 7z etc.)
 
 ### utils
 
 - fps counter
 - apscheduler
-- cal distances
+- math (cal distances
 
 ### AI power (moved to [AI_power](https://github.com/ykk648/AI_power))

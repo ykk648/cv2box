@@ -1,8 +1,24 @@
-### CV Threads Parts
+### CV Threads Base
 
 Human-like API , making multi-thread AI program more easy.
 
-Multithread sequence: Factory -> Linker -> Consumer
+Multithread waterfall sequence: Factory -> Linker -> Consumer
+
+If you need circle or tree structure, just add more queue to queue_list.
+
+#### multi-mode switch
+
+Make sure your model is pickable.
+
+```python
+import os
+os.environ['CV_MULTI_MODE'] = 'torch-process'  # multi-thread multi-process torch-process
+
+# for multi-process or torch-process
+import multiprocessing
+multiprocessing.set_start_method('spawn')  # fork
+```
+
 
 #### inherent base class
 
@@ -17,7 +33,7 @@ class SecondModel(Linker):
         self.model = SomeNet()
 
     def exit_func(self):
-        # rewrite your exit condition
+        # rewrite exit condition
         pass
 
     def forward_func(self, something_in):

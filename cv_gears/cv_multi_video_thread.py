@@ -2,33 +2,39 @@
 # @Time : 2022/6/28
 # @Author : ykk648
 # @Project : https://github.com/ykk648/cv2box
+
 from pathlib import Path
 import os
 import time
 from tqdm import tqdm
-from multiprocessing.dummy import Process, Queue  # multi thread
 import queue
 import datetime
+import numpy as np
 
-from cv2box.cv_gears.vidgear.camgear import CamGear
-from cv2box import CVImage
+if os.environ['CV_MULTI_MODE'] == 'multi-thread':
+    from multiprocessing.dummy import Process, Queue, Lock
+elif os.environ['CV_MULTI_MODE'] == 'multi-process':
+    from multiprocessing import Process, Queue, Lock
+elif os.environ['CV_MULTI_MODE'] == 'torch-process':
+    from torch.multiprocessing import Process, Queue, Lock
+
+from .vidgear import CamGear
+from ..cv_ops import CVImage
 
 
 class ReconnectingCamGear:
-    def __init__(self, source_list, reset_attempts=50, reset_delay=5, multi_stream_offset=True):
+    def __init__(self, source_list_, reset_attempts=50, reset_delay=5, multi_stream_offset=True):
         self.reset_attempts = reset_attempts
         self.reset_delay = reset_delay
-        self.source_list = source_list
+        self.source_list = source_list_
         self.multi_stream_offset = multi_stream_offset
 
         self.input_option_dict = {
             # 'CAP_PROP_FRAME_WIDTH': 1280,
             # 'CAP_PROP_FRAME_HEIGHT': 720,
             # 'CAP_PROP_FPS': 30,
+            # # ('M', 'P', '4', '2') ('X', 'V', 'I', 'D') ('H', '2', '6', '4')
             # 'CAP_PROP_FOURCC': cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'),
-            # 'CAP_PROP_FOURCC': cv2.VideoWriter_fourcc('M', 'P', '4', '2'),
-            # 'CAP_PROP_FOURCC': cv2.VideoWriter_fourcc('X', 'V', 'I', 'D'),
-            # 'CAP_PROP_FOURCC': cv2.VideoWriter_fourcc('H', '2', '6', '4'),
             'THREADED_QUEUE_MODE': True,
         }
 
@@ -56,7 +62,7 @@ class ReconnectingCamGear:
         if self.sourceA is None or self.sourceB is None:
             return None
         if self.running and self.reset_attempts > 0:
-            if self.first and self.offset:
+            if self.first and self.multi_stream_offset:
                 # offset
                 while self.pass_frame_number_a > 0:
                     _ = self.sourceA.read()
@@ -130,10 +136,10 @@ class CVMultiVideoThread(Process):
         self.fps_counter = fps_counter
         self.block = block
         self.process_name = process_name
-        self.pid = os.getpid()
+        self.pid_number = os.getpid()
         self.fps = fps
         if not self.silent:
-            print('init {} {}, pid is {}.'.format(self.process_name, self.__class__.__name__, self.pid))
+            print('init {} {}, pid is {}.'.format(self.process_name, self.__class__.__name__, self.pid_number))
 
     def run(self, ):
 
@@ -185,10 +191,9 @@ if __name__ == '__main__':
     source_list = [0, 2, 4, 6]
     q1 = Queue(5)
 
-    # rcg = ReconnectingCamGear(source_list, reset_attempts=20, reset_delay=5, )
     cvmt = CVMultiVideoThread(source_list, [q1])
     cvmt.start()
 
-    # while True:
-    #     frameA_, frameB_, frameC_, frameD_ = rcg.read()
-    #     CVImage(frameB_).show(1)
+    while True:
+        frameA_, frameB_, frameC_, frameD_ = q1.get()
+        CVImage(frameB_).show(1)

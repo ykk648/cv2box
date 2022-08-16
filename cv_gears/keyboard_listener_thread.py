@@ -1,14 +1,22 @@
 # -- coding: utf-8 --
 # @Time : 2021/11/15
 # @Author : ykk648
-# @Project : https://github.com/ykk648/AI_power
+# @Project : https://github.com/ykk648/cv2box
 
-from pynput import keyboard
-from multiprocessing.dummy import Process, Queue, Array, Manager
+from ..utils import try_raise
+import os
+
+if os.environ['CV_MULTI_MODE'] == 'multi-thread':
+    from multiprocessing.dummy import Process, Queue, Lock
+elif os.environ['CV_MULTI_MODE'] == 'multi-process':
+    from multiprocessing import Process, Queue, Lock
+elif os.environ['CV_MULTI_MODE'] == 'torch-process':
+    from torch.multiprocessing import Process, Queue, Lock
 
 
 class KeyboardListener(Process):
     def __init__(self, share_list):
+        try_raise('from pynput import keyboard', 'keyboard_listener: pip install pynput')
         super().__init__()
         self.share_list = share_list
         # do your init
