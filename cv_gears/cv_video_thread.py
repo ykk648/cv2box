@@ -6,8 +6,14 @@ from pathlib import Path
 import os
 import time
 from tqdm import tqdm
-from multiprocessing.dummy import Process, Queue  # multi thread
 import queue
+
+if os.environ['CV_MULTI_MODE'] == 'multi-thread':
+    from multiprocessing.dummy import Process, Queue, Lock
+elif os.environ['CV_MULTI_MODE'] == 'multi-process':
+    from multiprocessing import Process, Queue, Lock
+elif os.environ['CV_MULTI_MODE'] == 'torch-process':
+    from torch.multiprocessing import Process, Queue, Lock
 
 from ..cv_ops.cv_video import CVVideoLoader
 
@@ -25,9 +31,9 @@ class CVVideoThread(Process):
         self.fps_counter = fps_counter
         self.block = block
         self.process_name = process_name
-        self.pid = os.getpid()
+        self.pid_number = os.getpid()
         if not self.silent:
-            print('init {} {}, pid is {}.'.format(self.process_name, self.__class__.__name__, self.pid))
+            print('init {} {}, pid is {}.'.format(self.process_name, self.__class__.__name__, self.pid_number))
 
     def run(self, ):
 

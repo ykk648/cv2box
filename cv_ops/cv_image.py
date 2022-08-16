@@ -2,6 +2,7 @@
 # @Time : 2021/11/19
 # @Author : ykk648
 # @Project : https://github.com/ykk648/cv2box
+
 import os
 import cv2
 import numpy as np
@@ -25,8 +26,9 @@ class ImageBasic:
             image_in = str(image_in)
         if isinstance(image_in, str) and image_format == 'cv2':
             # assert type(image_in) is str, 'if not give str path, name \'image_format\' !'
+            assert Path(image_in).exists()
             self.cv_image = cv2.imread(image_in)
-        elif 'cv' in image_format:
+        elif 'cv2' in image_format:
             self.cv_image = image_in
         elif 'pi' in image_format:
             self.cv_image = cv2.cvtColor(np.asarray(image_in), cv2.COLOR_RGB2BGR)
@@ -57,6 +59,30 @@ class ImageBasic:
         from PIL import Image
         return Image.fromarray(cv2.cvtColor(self.cv_image, cv2.COLOR_BGR2RGB))
 
+    # ===== for image transfer =====
+    def base64(self):
+        """
+        :return: jpg format base64 code
+        """
+        image = cv2.imencode('.jpg', self.cv_image)[1]
+        image_code = str(base64.b64encode(image))[2:-1]
+        return 'data:image/jpg;base64,' + image_code
+
+    def bytes(self):
+        """
+        fast enough for video real-time steam process
+        :return:
+        """
+        return self.cv_image.tobytes()
+
+    def format_bytes(self, image_format='png'):
+        """
+        convenience but low speed
+        :param image_format:
+        :return:
+        """
+        return cv2.imencode(".{}".format(image_format), self.cv_image)[1].tobytes()
+
     def resize(self, size, interpolation=cv2.INTER_LINEAR):
         if type(size) == tuple:
             if size != self.cv_image.shape[:-1]:
@@ -69,6 +95,112 @@ class ImageBasic:
             raise 'Check the size input !'
         return self
 
+    def show(self, wait_time=0, window_name='test'):
+        cv2.namedWindow(window_name, 0)
+        cv2.imshow(window_name, self.cv_image)
+        cv2.waitKey(wait_time)
+        # key = cv2.waitKey(wait_time) & 0xFF
+        # # check for 'q' key-press
+        # if key == ord("q"):
+        #     # if 'q' key-pressed break out
+        #     return False
+
+    def save(self, img_save_p, compress=False, create_path=False):
+        if create_path:
+            os.makedirs(str(Path(img_save_p).parent), exist_ok=True)
+        if not compress:
+            cv2.imwrite(img_save_p, self.cv_image)
+        else:
+            suffix = Path(img_save_p).suffix
+            assert suffix not in img_save_p[:-len(suffix)]
+            cv2.imwrite(img_save_p.replace(suffix, '.jpg'), self.cv_image)
+
+
+class CVImage(ImageBasic):
+    def __init__(self, image_in, image_format='cv2', image_size=None):
+        super().__init__(image_in, image_format, image_size)
+        self.transform = None
+        self.input_std = self.input_mean = self.input_size = None
+
+    # ===== for preprocess data through cv2 to onnx model =====
+    def set_blob(self, input_std, input_mean, input_size):
+        self.input_std = input_std
+        self.input_mean = input_mean
+        self.input_size = input_size
+        return self
+
+    def blob_in(self, rgb=True):
+        """
+
+        Returns: 1*3*size*size
+
+        """
+        assert self.input_std and self.input_mean and self.input_size, 'Use set_blob first!'
+        if not isinstance(self.cv_image, list):
+            self.cv_image = [self.cv_image]
+
+        return cv2.dnn.blobFromImages(self.cv_image, 1.0 / self.input_std, self.input_size,
+                                      (self.input_mean, self.input_mean, self.input_mean), swapRB=rgb)
+
+    def t_normal(self, mean, std, inplace=True):
+        """
+        Using torchvision transforms , support CHW and BCHW, input tensor
+        """
+        from torchvision.transforms import functional as F
+        self.cv_image =  F.normalize(self.cv_image, mean=mean, std=std, inplace=inplace)
+
+    def t_tensor(self, device='cuda'):
+        """
+        Using torch , support CHW and BCHW
+        """
+        import torch
+        if self.cv_image.ndim ==4:
+            self.cv_image = torch.from_numpy(x.astype('float32')).permute(3, 1, 2).to(device).div_(255.0)
+        else:
+            self.cv_image = torch.from_numpy(x.astype('float32')).permute(2, 0, 1).to(device).div_(255.0)
+
+    def innormal(self, mean, std, to_rgb=False):
+        """
+        Inplace normalize an image with mean and std.
+        Args:
+            mean (ndarray): The mean to be used for normalize.
+            std (ndarray): The std to be used for normalize.
+            to_rgb (bool): Whether to convert to rgb.
+        Returns:
+            ndarray: The normalized image.
+        """
+        # cv2 inplace normalization does not accept uint8
+        self.cv_image = np.float32(self.cv_image)
+        mean = np.array(mean, dtype=np.float32)
+        std = np.array(std, dtype=np.float32)
+        assert self.cv_image.dtype != np.uint8
+        mean = np.float64(mean.reshape(1, -1))
+        stdinv = 1 / np.float64(std.reshape(1, -1))
+        if to_rgb:
+            cv2.cvtColor(self.cv_image, cv2.COLOR_BGR2RGB, self.cv_image)  # inplace
+        cv2.subtract(self.cv_image, mean, self.cv_image)  # inplace
+        cv2.multiply(self.cv_image, stdinv, self.cv_image)  # inplace
+        return self.cv_image
+
+    # ===== convert numpy image to transformed tensor =====
+    def set_transform(self, transform=None):
+        from torchvision import transforms
+        if transform:
+            self.transform = transform
+        else:
+            self.transform = transforms.Compose([
+                transforms.ToTensor(),
+                transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
+            ])
+        return self
+
+    def tensor(self):
+        import torch
+        assert self.transform is not None, 'Use set_transform first !'
+        img = self.transform(self.cv_image)
+        return torch.unsqueeze(img, 0)
+
+    # ===== for data preprocess and postprocess =====
     def resize_keep_ratio(self, target_size, pad_value=(0, 0, 0)):
         old_size = self.cv_image.shape[0:2][::-1]
         # ratio = min(float(target_size)/(old_size))
@@ -83,6 +215,44 @@ class ImageBasic:
                                            pad_value)
         return self.cv_image, ratio_, pad_w_, pad_h_
 
+    @staticmethod
+    def recover_from_resize(loc, ratio, pad_w, pad_h):
+        """
+        reverse method of resize_keep_ratio
+        Args:
+            loc: N*M M>2
+            ratio:
+            pad_w:
+            pad_h:
+        Returns:
+        """
+        loc = np.array(loc)
+        if pad_w == 0:
+            y_pad = pad_h // 2
+            loc[:, 0] = np.round(loc[:, 0] * 1 / ratio)
+            loc[:, 1] = np.round((loc[:, 1] - y_pad) * 1 / ratio)
+            return loc
+        if pad_h == 0:
+            x_pad = pad_w // 2
+            loc[:, 0] = np.round((loc[:, 0] - x_pad) * 1 / ratio)
+            loc[:, 1] = np.round(loc[:, 1] * 1 / ratio)
+            return loc
+
+    def crop_margin(self, box, margin_ratio=0.3):
+        """
+        :param box: x1,y1,x2,y2
+        :param margin_ratio:
+        :return:
+        """
+        box_width = box[2] - box[0]
+        box_height = box[3] - box[1]
+        height, width = self.cv_image.shape[0:2]
+
+        margin = int(margin_ratio * box_height)  # if use loose crop, change 0.3 to 1.0
+
+        return self.cv_image[max(box[1] - margin, 0):min(box[3] + margin, height),
+               max(box[0] - margin, 0):min(box[2] + margin, width), :]
+
     def crop_keep_ratio(self, box, target_size, padding_ratio=1.25, pad_value=(0, 0, 0)):
         """
 
@@ -95,7 +265,7 @@ class ImageBasic:
         Returns:
 
         """
-        assert padding_ratio > 1
+        assert padding_ratio >= 1
         image_h, image_w = self.cv_image.shape[:2]
 
         box_w = box[2] - box[0]
@@ -139,20 +309,29 @@ class ImageBasic:
         return self.cv_image, ratio, left, top
 
     @staticmethod
-    def recover_from_loc(loc, ratio, pad_w, pad_h):
-        assert type(loc) == list and len(loc) == 2
-        if pad_w == 0:
-            y_pad = pad_h // 2
-            return [round(loc[0] * 1 / ratio), round((loc[1] - y_pad) * 1 / ratio)]
-        if pad_h == 0:
-            x_pad = pad_w // 2
-            return [round((loc[0] - x_pad) * 1 / ratio), round(loc[1] * 1 / ratio)]
-
-    def draw_landmarks(self, landmark_in_):
+    def recover_from_crop(loc, ratio, left, top, image_shape_):
         """
+        reverse method of crop_keep_ratio
+        Args:
+            loc: N*M M>=2   [[x1,y1,..],[x2,y2,..]]
+            ratio:
+            left:
+            top:
+            image_shape_: HWC
+        Returns: N*M M>=2   [[x1,y1,..],[x2,y2,..]]
+        """
+        loc = np.array(loc)
+        loc[:, 0] = np.round(loc[:, 0] * image_shape_[0] / ratio + left)
+        loc[:, 1] = np.round(loc[:, 1] * image_shape_[1] / ratio + top)
+        return loc
 
-        :param landmark_in_: list [x1,y1,x2,y2...] [[x1,y1],[x2,y2]] numpy array [[x1,y1],[x2,y2]]
-        :return:
+    # ===== for points read and draw =====
+    @staticmethod
+    def read_points(landmark_in_):
+        """
+        :param landmark_in_: list [x1,y1,x2,y2...] [[x1,y1],[x2,y2]]
+        numpy array N*2 [[x1,y1],[x2,y2]]
+        :return:numpy array N*2 [[x1,y1],[x2,y2]]
         """
         if isinstance(landmark_in_, list):
             if isinstance(landmark_in_[0], list):
@@ -160,137 +339,20 @@ class ImageBasic:
             else:
                 assert len(landmark_in_) % 2 == 0
                 landmark_in_ = np.array(landmark_in_).reshape((-1, 2))
+        return landmark_in_
+
+    def draw_landmarks(self, landmark_in_, color=(0, 255, 0)):
+        """
+        :param landmark_in_: list [x1,y1,x2,y2...] [[x1,y1],[x2,y2]]
+        numpy array N*2 [[x1,y1],[x2,y2]]
+        :return:
+        """
+        landmark_in_ = self.read_points(landmark_in_)
         image_copy = self.cv_image.copy()
         cycle_line = int(self.cv_image.shape[0] / 100)
         for i in range(landmark_in_.shape[0]):
-            cv2.circle(image_copy, (int(landmark_in_[i][0]), int(landmark_in_[i][1])), cycle_line, color=(0, 255, 0))
+            try:
+                cv2.circle(image_copy, (int(landmark_in_[i][0]), int(landmark_in_[i][1])), cycle_line, color=color)
+            except ValueError:
+                pass
         return image_copy
-
-    def show(self, wait_time=0, window_name='test'):
-        cv2.namedWindow(window_name, 0)
-        cv2.imshow(window_name, self.cv_image)
-        cv2.waitKey(wait_time)
-        # key = cv2.waitKey(wait_time) & 0xFF
-        # # check for 'q' key-press
-        # if key == ord("q"):
-        #     # if 'q' key-pressed break out
-        #     return False
-
-    def crop_margin(self, box, margin_ratio=0.3):
-        """
-        :param box: x1,y1,x2,y2
-        :param margin_ratio:
-        :return:
-        """
-        box_width = box[2] - box[0]
-        box_height = box[3] - box[1]
-        height, width = self.cv_image.shape[0:2]
-
-        margin = int(margin_ratio * box_height)  # if use loose crop, change 0.3 to 1.0
-
-        # new_box = [max(box[0] - margin, 0), max(box[1] - margin, 0),
-        #            min(box[2] + margin, width), min(box[3] + margin, height)]
-        return self.cv_image[max(box[1] - margin, 0):min(box[3] + margin, height),
-               max(box[0] - margin, 0):min(box[2] + margin, width), :]
-
-    def save(self, img_save_p, compress=False, create_path=False):
-        if create_path:
-            os.makedirs(str(Path(img_save_p).parent), exist_ok=True)
-        if not compress:
-            cv2.imwrite(img_save_p, self.cv_image)
-        else:
-            suffix = Path(img_save_p).suffix
-            assert suffix not in img_save_p[:-len(suffix)]
-            cv2.imwrite(img_save_p.replace(suffix, '.jpg'), self.cv_image)
-
-
-class CVImage(ImageBasic):
-    def __init__(self, image_in, image_format='cv2', image_size=None):
-        super().__init__(image_in, image_format, image_size)
-        self.transform = None
-        self.input_std = self.input_mean = self.input_size = None
-
-    # ===== for image transfer =====
-    def base64(self):
-        """
-        :return: jpg format base64 code
-        """
-        image = cv2.imencode('.jpg', self.cv_image)[1]
-        image_code = str(base64.b64encode(image))[2:-1]
-        return 'data:image/jpg;base64,' + image_code
-
-    def bytes(self):
-        """
-        fast enough for video real-time steam process
-        :return:
-        """
-        return self.cv_image.tobytes()
-
-    def format_bytes(self, image_format='png'):
-        """
-        convenience but low speed
-        :param image_format:
-        :return:
-        """
-        return cv2.imencode(".{}".format(image_format), self.cv_image)[1].tobytes()
-
-    # ===== for preprocess data through cv2 to onnx model =====
-    def set_blob(self, input_std, input_mean, input_size):
-        self.input_std = input_std
-        self.input_mean = input_mean
-        self.input_size = input_size
-        return self
-
-    def blob_rgb(self):
-        """
-
-        Returns: 1*3*size*size
-
-        """
-        assert self.input_std and self.input_mean and self.input_size, 'Use set_blob first!'
-        if not isinstance(self.cv_image, list):
-            self.cv_image = [self.cv_image]
-
-        return cv2.dnn.blobFromImages(self.cv_image, 1.0 / self.input_std, self.input_size,
-                                      (self.input_mean, self.input_mean, self.input_mean), swapRB=True)
-
-    def innormal(self, mean, std, to_rgb=True):
-        """Inplace normalize an image with mean and std.
-        Args:
-            mean (ndarray): The mean to be used for normalize.
-            std (ndarray): The std to be used for normalize.
-            to_rgb (bool): Whether to convert to rgb.
-
-        Returns:
-            ndarray: The normalized image.
-        """
-        # cv2 inplace normalization does not accept uint8
-        self.cv_image = np.float32(self.cv_image)
-        mean = np.array(mean, dtype=np.float32)
-        std = np.array(std, dtype=np.float32)
-        assert self.cv_image.dtype != np.uint8
-        mean = np.float64(mean.reshape(1, -1))
-        stdinv = 1 / np.float64(std.reshape(1, -1))
-        if to_rgb:
-            cv2.cvtColor(self.cv_image, cv2.COLOR_BGR2RGB, self.cv_image)  # inplace
-        cv2.subtract(self.cv_image, mean, self.cv_image)  # inplace
-        cv2.multiply(self.cv_image, stdinv, self.cv_image)  # inplace
-        return self.cv_image
-
-    # ===== convert numpy image to transformed tensor =====
-    def set_transform(self, transform=None):
-        from torchvision import transforms
-        if not transform:
-            self.transform = transform
-        else:
-            self.transform = transforms.Compose([
-                transforms.ToTensor(),
-                transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
-            ])
-        return self
-
-    def tensor(self):
-        import torch
-        assert self.transform is not None, 'Use set_transform first !'
-        img = self.transform(self.cv_image)
-        return torch.unsqueeze(img, 0)

@@ -40,9 +40,11 @@ Now including these functions:
 
 ### cv gears
 
+Now supports mode switch from multi-thread/multi-process/torch-process. 
+
 - [CV threads parts](./cv_gears#CV-Threads-Parts) , fast construct your multithread AI program.
 - [CV video thread](./cv_gears#CV-Video-Thread) , give a video path to get a frame thread.
-- [CV multi video thread](./cv_gears#CV-Multi-Video-Thread) , give a video path to get a frame thread.
+- [CV multi video thread](./cv_gears#CV-Multi-Video-Thread) , give multical video path to get a multi frame thread.
 
 ### code templates
 

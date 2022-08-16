@@ -1,7 +1,7 @@
 # -- coding: utf-8 --
 # @Time : 2021/11/15
 # @Author : ykk648
-# @Project : https://github.com/ykk648/AI_power
+# @Project : https://github.com/ykk648/cv2box
 
 from pynput import keyboard
 from multiprocessing.dummy import Process, Queue, Array, Manager
