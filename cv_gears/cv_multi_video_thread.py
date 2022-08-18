@@ -10,13 +10,7 @@ from tqdm import tqdm
 import queue
 import datetime
 import numpy as np
-
-if os.environ['CV_MULTI_MODE'] == 'multi-thread':
-    from multiprocessing.dummy import Process, Queue, Lock
-elif os.environ['CV_MULTI_MODE'] == 'multi-process':
-    from multiprocessing import Process, Queue, Lock
-elif os.environ['CV_MULTI_MODE'] == 'torch-process':
-    from torch.multiprocessing import Process, Queue, Lock
+from multiprocessing.dummy import Process, Queue, Lock
 
 from .vidgear import CamGear
 from ..cv_ops import CVImage
@@ -80,12 +74,14 @@ class ReconnectingCamGear:
             frameC = self.sourceC.read()
             frameD = self.sourceD.read()
 
-            if frameA is None or frameB is None:
+            if frameA is None or frameB is None or frameC is None or frameD is None:
                 self.sourceA.stop()
                 self.sourceB.stop()
                 self.sourceC.stop()
                 self.sourceD.stop()
                 self.reset_attempts -= 1
+                if self.reset_attempts == 0:
+                    return None, None, None, None
                 print(
                     "Re-connection Attempt-{} occured at time:{}".format(
                         str(self.reset_attempts),
@@ -106,7 +102,7 @@ class ReconnectingCamGear:
                 self.frameD = frameD
                 return frameA, frameB, frameC, frameD
         else:
-            return None
+            return None, None, None, None
 
     def stop(self):
         self.running = False
@@ -128,7 +124,7 @@ class CVMultiVideoThread(Process):
         assert len(video_in_path_list) == 4
         self.video_in_path_list = video_in_path_list
 
-        self.rcg = ReconnectingCamGear(video_in_path_list, reset_attempts=20, reset_delay=5,
+        self.rcg = ReconnectingCamGear(video_in_path_list, reset_attempts=1, reset_delay=5,
                                        multi_stream_offset=multi_stream_offset)
 
         self.queue_list = queue_list
@@ -155,6 +151,7 @@ class CVMultiVideoThread(Process):
             if frameA_ is None or frameB_ is None or frameC_ is None or frameD_ is None:
                 self.queue_list[0].put(None)
                 self.rcg.stop()
+                break
 
             something_out = [frameA_, frameB_, frameC_, frameD_]
 

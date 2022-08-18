@@ -8,13 +8,17 @@ from .cv_file import CVFile
 from .cv_image import CVImage
 from ..utils import try_raise
 import cv2
+import logging
+
+try:
+    exec('''import multical;import aniposelib;from aniposelib.utils import get_rtvec, make_M''')
+except Exception as e:
+    logger = logging.getLogger('cv2box')
+    logger.error('got exception: {}, {}'.format(e, 'cv_camera: pip install aniposelib multical'))
 
 
 class CVCamera:
     def __init__(self, multical_pkl_path=None):
-        try_raise('''import aniposelib
-        import multical
-        from aniposelib.utils import get_rtvec, make_M''', 'cv_camera: pip install aniposelib multical')
 
         if multical_pkl_path:
             self.multical_pkl_data = CVFile(multical_pkl_path).data

@@ -23,8 +23,7 @@ multiprocessing.set_start_method('spawn')  # fork
 #### inherent base class
 
 ```python
-from cv2box import Factory, Linker, Consumer
-
+from cv2box.cv_gears import Factory, Linker, Consumer
 
 class SecondModel(Linker):
     def __init__(self, queue_list: list, block=True, fps_counter=False):
@@ -47,7 +46,7 @@ class SecondModel(Linker):
 #### init class in main func
 
 ```python
-from multiprocessing.dummy import Process, Queue
+from cv2box.cv_gears import Queue
 
 q1 = Queue(2)
 q2 = Queue(2)
@@ -66,8 +65,7 @@ Supply thread reading to a video file, addition of VidGear.
 #### example
 
 ```python
-from cv2box import CVVideoThread
-from multiprocessing.dummy import Queue
+from cv2box.cv_gears import CVVideoThread, Queue
 
 q1 = Queue(5)
 c1 = CVVideoThread(video_p, [q1], silent=False)
@@ -79,7 +77,7 @@ c1.start()
 Supply multiple video/stream read synchronous based on vidgear.
 
 ```python
-from cv2box.cv_gears.cv_multi_video_thread import CVMultiVideoThread
+from cv2box.cv_gears import CVMultiVideoThread
 source_list = [0, 2, 4, 6]
 q1 = Queue(5)
 cvmt = CVMultiVideoThread(source_list, [q1])

@@ -3,12 +3,18 @@
 # @Author : ykk648
 # @Project : https://github.com/ykk648/cv2box
 import time
-# from multiprocessing import shared_memory
 import uuid
 import numpy as np
+import logging
 from ..utils.util import try_raise
+
 # python > 3.8
-try_raise('import multiprocessing.shared_memory', 'cv_queue: plz make sure your python version >= 3.8.')
+try:
+    exec('''import multiprocessing.shared_memory''')
+except Exception as e:
+    logger = logging.getLogger('cv2box')
+    logger.error('got exception: {}, {}'.format(e, 'cv_queue: plz make sure your python version >= 3.8.'))
+
 
 class CVQueue:
     def __init__(self, queue_length, mem_name, max_data_size=None, retry=True, rw_sleep_time=0.01, silence=False):
@@ -155,4 +161,3 @@ class CVQueue:
                 pass
         if not silence:
             print('clean mem \'{} \'done !'.format(mem_list))
-

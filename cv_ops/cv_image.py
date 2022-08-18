@@ -87,7 +87,7 @@ class ImageBasic:
         if type(size) == tuple:
             if size != self.cv_image.shape[:-1]:
                 # cv2 resize function always returns a new Mat object.
-                self.cv_image = cv2.resize(self.cv_image, size)
+                self.cv_image = cv2.resize(self.cv_image, size, interpolation=interpolation)
         elif type(size) == int:
             if size != self.cv_image.shape[0]:
                 self.cv_image = cv2.resize(self.cv_image, (size, size), interpolation=interpolation)
