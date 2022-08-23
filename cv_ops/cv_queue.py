@@ -6,14 +6,10 @@ import time
 import uuid
 import numpy as np
 import logging
-from ..utils.util import try_raise
+from ..utils.util import try_import
 
 # python > 3.8
-try:
-    exec('''import multiprocessing.shared_memory''')
-except Exception as e:
-    logger = logging.getLogger('cv2box')
-    logger.error('got exception: {}, {}'.format(e, 'cv_queue: plz make sure your python version >= 3.8.'))
+shared_memory = try_import('multiprocessing.shared_memory', 'cv_queue: plz make sure your python version >= 3.8.')
 
 
 class CVQueue:

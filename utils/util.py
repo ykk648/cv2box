@@ -9,6 +9,7 @@ import warnings
 import sys
 import numpy as np
 import logging
+from .logging import cv_log
 
 
 def safe_cv_pyqt5():
@@ -56,6 +57,7 @@ class MyTimer(object):
     """
     timer
     """
+
     def __enter__(self):
         self.t0 = time.time()
 
@@ -80,6 +82,7 @@ def mfc(flag='Your Func Name'):
     :param flag:
     :return:
     """
+
     def decorator(f):
         def wrapper(*args, **kwargs):
             t0 = time.time()
@@ -103,21 +106,8 @@ def get_path_by_ext(this_dir, ext_list=None, sorted_by_stem=True):
         return [p for p in Path(this_dir).rglob('*') if p.suffix in ext_list]
 
 
-# def try_import(pkg_name, warn_message=None):
-#     try:
-#         import_module(pkg_name)
-#         # exec('import ' + pkg_name)
-#     except ModuleNotFoundError:
-#         if not warn_message:
-#             warn_message = 'can not find package: {}, try install or reinstall it !'.format(pkg_name)
-#         warnings.warn(warn_message)
-#         pass
-
-
-def try_raise(cmd, warn_message=None, ignore_origin_exception=False):
+def try_import(module_name, warn_message=None):
     try:
-        exec(cmd)
+        return import_module(module_name)
     except Exception as e:
-        logger = logging.getLogger('cv2box')
-        if not ignore_origin_exception:
-            logger.error('got exception: {}, {}'.format(e, warn_message))
+        cv_log('got exception: {}, {}'.format(e, warn_message), 'error')

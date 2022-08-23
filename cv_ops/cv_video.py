@@ -4,7 +4,7 @@
 # @Project : https://github.com/ykk648/cv2box
 import os
 import re
-
+import logging
 import cv2
 import shutil
 from tqdm import tqdm
@@ -334,8 +334,10 @@ class CVVideoLoaderFF(object, ):
     def __enter__(self):
         try:
             from deffcode import FFdecoder
-        except:
-            print('CVVideoLoaderFF need deffcode !')
+        except Exception as e:
+            logger = logging.getLogger('cv2box')
+            logger.error('got exception: {}, {}'.format(e, 'cv_video: pip install deffcode'))
+
         self.decoder = FFdecoder(self.video_p).formulate()
         self.fps = self.decoder.metadata["source_video_framerate"]
         self.size = self.decoder.metadata["source_video_resolution"]

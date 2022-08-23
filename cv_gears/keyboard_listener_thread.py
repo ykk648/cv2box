@@ -3,7 +3,7 @@
 # @Author : ykk648
 # @Project : https://github.com/ykk648/cv2box
 
-from ..utils import try_raise
+from ..utils import try_import
 import os
 
 if os.environ['CV_MULTI_MODE'] == 'multi-thread':
@@ -13,10 +13,11 @@ elif os.environ['CV_MULTI_MODE'] == 'multi-process':
 elif os.environ['CV_MULTI_MODE'] == 'torch-process':
     from torch.multiprocessing import Process, Queue, Lock
 
+try_import('pynput.keyboard', 'keyboard_listener: pip install pynput')
+
 
 class KeyboardListener(Process):
     def __init__(self, share_list):
-        try_raise('from pynput import keyboard', 'keyboard_listener: pip install pynput')
         super().__init__()
         self.share_list = share_list
         # do your init

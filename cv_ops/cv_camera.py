@@ -6,21 +6,15 @@
 import numpy as np
 from .cv_file import CVFile
 from .cv_image import CVImage
-from ..utils import try_raise
+from ..utils import try_import
 import cv2
-import logging
-
-try:
-    exec('''import multical;import aniposelib;from aniposelib.utils import get_rtvec, make_M''')
-except Exception as e:
-    logger = logging.getLogger('cv2box')
-    logger.error('got exception: {}, {}'.format(e, 'cv_camera: pip install aniposelib multical'))
 
 
 class CVCamera:
     def __init__(self, multical_pkl_path=None):
 
         if multical_pkl_path:
+            multical = try_import('multical', 'cv_camera: pip install multical')
             self.multical_pkl_data = CVFile(multical_pkl_path).data
             self.cam_name_list = self.multical_pkl_data.calibrations['calibration'].camera_poses.names
         self.camera_group = None
@@ -30,7 +24,8 @@ class CVCamera:
 
     @staticmethod
     def matrix_2_rt(matrix_):
-        r_vec, t_vec = get_rtvec(matrix_)
+        aniposelib = try_import('aniposelib', 'cv_camera: pip install aniposelib')
+        r_vec, t_vec = aniposelib.utils.get_rtvec(matrix_)
         return r_vec, t_vec
 
     @staticmethod
@@ -41,7 +36,8 @@ class CVCamera:
             t_vec: 3,
         Returns: 4*4
         """
-        matrix_ = make_M(r_vec, t_vec)
+        aniposelib = try_import('aniposelib', 'cv_camera: pip install aniposelib')
+        matrix_ = aniposelib.utils.make_M(r_vec, t_vec)
         return matrix_
 
     @staticmethod
@@ -193,6 +189,7 @@ class CVCamera:
         cameras = []
         for i in range(len(self.cam_name_list)):
             camera_name = self.cam_name_list[i]
+            aniposelib = try_import('aniposelib', 'cv_camera: pip install aniposelib')
             camera = aniposelib.cameras.Camera(name=camera_name,
                                                size=self.image_size()[camera_name],
                                                matrix=self.intri_matrix()[camera_name],

@@ -3,9 +3,9 @@
 # @Author : ykk648
 # @Project : https://github.com/ykk648/cv2box
 import numpy as np
-from ..utils import try_raise
+from ..utils import try_import
 
-try_raise('import torch', 'CVRotate need torch')
+try_import('torch', 'cv_rotate: need torch')
 
 
 # from torch.nn import functional as F
