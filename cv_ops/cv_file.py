@@ -64,6 +64,9 @@ class CVFile:
                 import yaml
                 with open(file_path, 'rb') as f:
                     self.file_data = yaml.safe_load(f)
+            elif self.suffix == '.csv':
+                import pandas as pd
+                self.file_data = pd.read_csv(file_path)
 
     @property
     def data(self):
@@ -98,6 +101,10 @@ class CVFile:
     def npz_write(self, data_in):
         assert type(data_in) is dict
         np.savez(self.file_path, data_in)
+
+    def pd_write(self, data_in):
+        os.makedirs(str(Path(self.file_path).parent), exist_ok=True)
+        data_in.to_csv(self.file_path)
 
     def yaml_dump(self, data_in):
         assert type(data_in) is dict
