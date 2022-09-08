@@ -37,7 +37,7 @@ def data_resolve(data_in, iter_times, dummy):
 
 
 class CVFile:
-    def __init__(self, file_path, file_format=None):
+    def __init__(self, file_path, *args):
         self.file_data = None
         self.file_path = file_path
 
@@ -66,7 +66,7 @@ class CVFile:
                     self.file_data = yaml.safe_load(f)
             elif self.suffix == '.csv':
                 import pandas as pd
-                self.file_data = pd.read_csv(file_path)
+                self.file_data = pd.read_csv(file_path, *args)
 
     @property
     def data(self):
@@ -88,9 +88,10 @@ class CVFile:
             pickle.dump(data_in, f)
 
     def json_write(self, data_in):
-        for k, v in data_in.items():
-            if isinstance(v, np.bool_):
-                data_in[k] = bool(v)
+        if isinstance(data_in, dict):
+            for k, v in data_in.items():
+                if isinstance(v, np.bool_):
+                    data_in[k] = bool(v)
         with open(self.file_path, 'w', encoding='utf-8') as f:
             json.dump(data_in, f)
 
@@ -102,13 +103,12 @@ class CVFile:
         assert type(data_in) is dict
         np.savez(self.file_path, data_in)
 
-    def pd_write(self, data_in):
+    def pd_write(self, data_in, index=True):
         os.makedirs(str(Path(self.file_path).parent), exist_ok=True)
-        data_in.to_csv(self.file_path)
+        data_in.to_csv(self.file_path, index=index)
 
     def yaml_dump(self, data_in):
         assert type(data_in) is dict
         import yaml
         with open(self.file_path, 'w', encoding='utf-8') as f:
             yaml.dump(data_in, f)
-

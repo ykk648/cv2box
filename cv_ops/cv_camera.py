@@ -11,13 +11,18 @@ import cv2
 
 
 class CVCamera:
-    def __init__(self, multical_pkl_path=None):
+    def __init__(self, multical_pkl_path=None, group_pkl_path=None):
 
         if multical_pkl_path:
             multical = try_import('multical', 'cv_camera: pip install multical')
             self.multical_pkl_data = CVFile(multical_pkl_path).data
             self.cam_name_list = self.multical_pkl_data.calibrations['calibration'].camera_poses.names
-        self.camera_group = None
+        else:
+            self.multical_pkl_data = None
+        if group_pkl_path:
+            self.camera_group = CVFile(group_pkl_path).data
+        else:
+            self.camera_group = None
 
     def __len__(self):
         return len(self.cam_name_list)
@@ -131,6 +136,9 @@ class CVCamera:
         return rt_vec
 
     def dist(self):
+        """
+        Returns: multical dist: 1*5
+        """
         dist = {}
         for i in range(len(self.cam_name_list)):
             dist[self.cam_name_list[i]] = \
@@ -177,14 +185,11 @@ class CVCamera:
 
         corners, ids, rejected = cv2.aruco.detectMarkers(detect_image,
                                                          aruco_dict, parameters=detect_config)
-        print(corners, ids)
-        print(detect_config)
-
         cv2.aruco.drawDetectedMarkers(detect_image, corners, ids, )
         CVImage(detect_image).show()
 
     # ========================  Anipose Format ==============================
-    def load_camera_group(self):
+    def load_camera_group_from_multical(self):
         """Load a set of cameras in the environment."""
         cameras = []
         for i in range(len(self.cam_name_list)):
@@ -200,14 +205,13 @@ class CVCamera:
         self.camera_group = aniposelib.cameras.CameraGroup(cameras)
         return self
 
-    def bundle_adjust_iter(self, n_view_2d_kps):
+    def bundle_adjust_iter(self, n_view_2d_kps, kpt_thre=0.7):
         """
         :param n_view_2d_kps: N_view * N_frame * N_kps * 3
         :return:
         """
         assert self.camera_group, "use load_camera_group first ! "
         # Filter keypoints to select those best points
-        kpt_thre = 0.7
         ignore_idxs = np.where(n_view_2d_kps[:, :, :, 2] < kpt_thre)
         n_view_2d_kps[ignore_idxs[0], ignore_idxs[1], ignore_idxs[2], :] = np.nan
         n_view_2d_kps = n_view_2d_kps[..., 0:2]

@@ -8,8 +8,15 @@ from importlib import import_module
 import warnings
 import sys
 import numpy as np
-import logging
-from .logging import cv_log
+from .logging import cv_print
+import platform
+
+
+def system_judge():
+    """
+    :return: e.g. windows linux java
+    """
+    return platform.system().lower()
 
 
 def safe_cv_pyqt5():
@@ -17,7 +24,7 @@ def safe_cv_pyqt5():
     resolve conflict made by opencv-python & pyqt5
     :return:
     """
-    ci_build_and_not_headless = False
+    # ci_build_and_not_headless = False
     try:
         from cv2.version import ci_build, headless
         ci_and_not_headless = ci_build and not headless
@@ -57,7 +64,6 @@ class MyTimer(object):
     """
     timer
     """
-
     def __enter__(self):
         self.t0 = time.time()
 
@@ -82,7 +88,6 @@ def mfc(flag='Your Func Name'):
     :param flag:
     :return:
     """
-
     def decorator(f):
         def wrapper(*args, **kwargs):
             t0 = time.time()
@@ -110,4 +115,4 @@ def try_import(module_name, warn_message=None):
     try:
         return import_module(module_name)
     except Exception as e:
-        cv_log('got exception: {}, {}'.format(e, warn_message), 'error')
+        cv_print('got exception: {}, {}'.format(e, warn_message), 'error')

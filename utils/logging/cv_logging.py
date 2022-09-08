@@ -5,6 +5,7 @@
 
 import logging
 import os
+from tqdm.contrib.logging import logging_redirect_tqdm
 
 CV_LOG_LEVEL = os.environ['CV_LOG_LEVEL']
 
@@ -17,18 +18,30 @@ LEVEL_DICT = {
 }
 
 
-def cv_log(message, level='info'):
+def cv_print(message, *args, level='info'):
     logger = logging.getLogger('cv2box')
-    if level == 'debug':
-        logger.debug(message)
-    elif level == 'info':
-        logger.info(message)
-    elif level == 'warning':
-        logger.warning(message)
-    elif level == 'error':
-        logger.error(message)
-    elif level == 'critical':
-        logger.critical(message)
+    with logging_redirect_tqdm(loggers=[logger]):
+        if level == 'debug':
+            logger.debug(message, *args)
+        elif level == 'info':
+            logger.info(message, *args)
+        elif level == 'warning':
+            logger.warning(message, *args)
+        elif level == 'error':
+            logger.error(message, *args)
+        elif level == 'critical':
+            logger.critical(message, *args)
+
+
+def set_log_level(level='info'):
+    logger = logging.getLogger('cv2box')
+    logger.setLevel(LEVEL_DICT[level])
+
+
+def judge_log_level(level='info'):
+    logger = logging.getLogger('cv2box')
+    level_now = logger.getEffectiveLevel()
+    return level_now == LEVEL_DICT[level]
 
 
 def cv_logging_init():

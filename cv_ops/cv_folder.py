@@ -8,8 +8,8 @@ import cv2
 import shutil
 from tqdm import tqdm
 import random
-from cv2box.utils.util import make_random_name
 from pathlib import Path
+from ..utils import os_call, make_random_name
 
 
 class CVFolder:
@@ -82,4 +82,11 @@ class CVFolder:
         for f in tqdm(f_list_remove):
             os.remove(os.path.join(self.root_path, f))
 
-    # def file_split(self, num_per_dir):
+    def compress_7z(self, compress_level=5, pwd='', volumes='4g'):
+        # https://documentation.help/7-Zip/
+        if not self.save_path:
+            self.save_path = './'
+        output_file_name = '{}.7z'.format(Path(self.root_path).parts[-1])
+        cmd = '7z a -t7z -r {} {} -mx{} -p{} -v{}'.format(self.save_path + output_file_name, self.root_path,
+                                                          compress_level, pwd, volumes,)
+        os_call(cmd)

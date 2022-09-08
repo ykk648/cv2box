@@ -11,6 +11,8 @@ import os
 import time
 import queue
 
+from ..utils import cv_print as print
+
 if os.environ['CV_MULTI_MODE'] == 'multi-thread':
     from multiprocessing.dummy import Process, Queue, Lock
 elif os.environ['CV_MULTI_MODE'] == 'multi-process':
@@ -30,7 +32,7 @@ class Factory(Process):
         self.exit_signal = False
 
         # add init here
-        print('init {} {}, pid is {}.'.format('Factory', self.class_name(), self.pid_number))
+        print('Init {} {}, pid is {}.'.format('Factory', self.class_name(), self.pid_number))
 
     @classmethod
     def class_name(cls):
@@ -185,7 +187,6 @@ class Consumer(Process):
         return cls.__name__
 
     def forward_func(self, something_in):
-
         # do your work here.
         something_out = something_in
         return something_out
@@ -227,10 +228,3 @@ class Consumer(Process):
                     print("{} FPS: {}".format(self.class_name(), counter / time_sum))
                     counter = 0
                     time_sum = 0
-
-
-if __name__ == '__main__':
-    q1 = Queue(10)
-    q2 = Queue(10)
-    c1 = Consumer([q1, q2])
-    c1.start()

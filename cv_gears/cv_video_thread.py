@@ -8,32 +8,33 @@ import time
 from tqdm import tqdm
 import queue
 
-if os.environ['CV_MULTI_MODE'] == 'multi-thread':
-    from multiprocessing.dummy import Process, Queue, Lock
-elif os.environ['CV_MULTI_MODE'] == 'multi-process':
+if os.environ['CV_MULTI_MODE'] == 'multi-process':
     from multiprocessing import Process, Queue, Lock
 elif os.environ['CV_MULTI_MODE'] == 'torch-process':
     from torch.multiprocessing import Process, Queue, Lock
+else:
+    from multiprocessing.dummy import Process, Queue, Lock  # multi-thread
 
 from ..cv_ops.cv_video import CVVideoLoader
+from ..utils import cv_print as print
 
 
 class CVVideoThread(Process):
 
-    def __init__(self, video_in_path, queue_list: list, silent=False, block=True, fps_counter=False,
-                 process_name='CVVideoThread'):
+    def __init__(self, video_in_path, queue_list: list, block=True, fps_counter=False):
         super().__init__()
         assert Path(video_in_path).exists()
         assert len(queue_list) == 1
         self.video_path = video_in_path
         self.queue_list = queue_list
-        self.silent = silent
         self.fps_counter = fps_counter
         self.block = block
-        self.process_name = process_name
         self.pid_number = os.getpid()
-        if not self.silent:
-            print('init {} {}, pid is {}.'.format(self.process_name, self.__class__.__name__, self.pid_number))
+        print('Init %s %s, pid is %s.', self.class_name(), self.__class__.__name__, self.pid_number)
+
+    @classmethod
+    def class_name(cls):
+        return cls.__name__
 
     def run(self, ):
 
@@ -52,7 +53,7 @@ class CVVideoThread(Process):
                     counter += 1
                     time_sum += (time.time() - start_time)
                     if time_sum > 10:
-                        print("{} FPS: {}".format(self.process_name, counter / time_sum))
+                        print("%s FPS: %s", self.class_name(), counter / time_sum)
                         counter = 0
                         time_sum = 0
                     start_time = time.time()
@@ -66,7 +67,6 @@ class CVVideoThread(Process):
                         # do your judge here, for example
                         queue_full_counter += 1
                         if (time.time() - start_time) > 10:
-                            print('{} Queue full {} times'.format(self.process_name, queue_full_counter))
+                            print('%s Queue full %s times', self.class_name(), queue_full_counter)
         self.queue_list[0].put(None)
-        if not self.silent:
-            print('Video load done, {} exit'.format(self.process_name))
+        print('Video load done, %s exit', self.class_name())
