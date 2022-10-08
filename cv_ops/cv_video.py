@@ -151,8 +151,10 @@ class CVVideo:
         else:
             if not rename:
                 save_path = out_path + '/'
+                Path.mkdir(Path(save_path), exist_ok=True)
             else:
                 save_path = out_path
+                Path.mkdir(Path(save_path).parent, exist_ok=True)
         command = 'ffmpeg -i {} -r {} -q:v 2 -f image2 {}%08d.jpg'.format(self.video_path, per_sec, save_path)
         os_call(command, silent=silent)
 

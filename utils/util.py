@@ -37,10 +37,10 @@ def safe_cv_pyqt5():
 
 
 def os_call(command, silent=False):
-    print(command)
     if silent:
         os.system(command + ' >/dev/null 2>&1')
     else:
+        print(command)
         os.system(command)
 
 
@@ -101,7 +101,7 @@ def mfc(flag='Your Func Name'):
     return decorator
 
 
-def get_path_by_ext(this_dir, ext_list=None, sorted_by_stem=True):
+def get_path_by_ext(this_dir, ext_list=None, sorted_by_stem=False):
     if ext_list is None:
         print('Use image ext as default !')
         ext_list = [".jpg", ".png", ".JPG", ".webp", ".jpeg"]

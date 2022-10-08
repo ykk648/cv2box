@@ -37,7 +37,7 @@ def data_resolve(data_in, iter_times, dummy):
 
 
 class CVFile:
-    def __init__(self, file_path, *args):
+    def __init__(self, file_path, *args, **kwargs):
         self.file_data = None
         self.file_path = file_path
 
@@ -66,7 +66,7 @@ class CVFile:
                     self.file_data = yaml.safe_load(f)
             elif self.suffix == '.csv':
                 import pandas as pd
-                self.file_data = pd.read_csv(file_path, *args)
+                self.file_data = pd.read_csv(file_path, **kwargs)
 
     @property
     def data(self):
