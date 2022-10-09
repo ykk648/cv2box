@@ -9,6 +9,7 @@ import numpy as np
 import base64
 import io
 from pathlib import PosixPath, Path
+from ..utils import try_import
 
 """
 skimage and pillow read image based uint8 and RGB mode
@@ -56,7 +57,7 @@ class ImageBasic:
         return self.cv_image
 
     def pillow(self):
-        from PIL import Image
+        Image = try_import('PIL.Image', 'cv_math: need pillow here.')
         return Image.fromarray(cv2.cvtColor(self.cv_image, cv2.COLOR_BGR2RGB))
 
     # ===== for image transfer =====
@@ -129,11 +130,14 @@ class CVImage(ImageBasic):
         self.input_size = input_size
         return self
 
-    def blob_in(self, rgb=True):
+    def blob_in(self, rgb=False):
         """
-
+        same as:
+            MEAN = 255 * np.array([0.5, 0.5, 0.5])
+            STD = 255 * np.array([0.5, 0.5, 0.5])
+            x = x.transpose(-1, 0, 1)
+            x = (x - MEAN[:, None, None]) / STD[:, None, None]
         Returns: 1*3*size*size
-
         """
         assert self.input_std and self.input_mean and self.input_size, 'Use set_blob first!'
         if not isinstance(self.cv_image, list):
@@ -146,14 +150,14 @@ class CVImage(ImageBasic):
         """
         Using torchvision transforms , support CHW and BCHW, input tensor
         """
-        from torchvision.transforms import functional as F
+        F = try_import('torchvision.transforms.functional', 'cv_math: need torchvision here.')
         self.cv_image = F.normalize(self.cv_image, mean=mean, std=std, inplace=inplace)
 
     def t_tensor(self, x, device='cuda'):
         """
         Using torch , support CHW and BCHW
         """
-        import torch
+        torch = try_import('torch', 'cv_math: need torch here.')
         if self.cv_image.ndim == 4:
             self.cv_image = torch.from_numpy(x.astype('float32')).permute(3, 1, 2).to(device).div_(255.0)
         else:
@@ -184,7 +188,7 @@ class CVImage(ImageBasic):
 
     # ===== convert numpy image to transformed tensor =====
     def set_transform(self, transform=None):
-        from torchvision import transforms
+        transforms = try_import('torchvision.transforms', 'cv_math: need torchvision here.')
         if transform:
             self.transform = transform
         else:
@@ -195,7 +199,7 @@ class CVImage(ImageBasic):
         return self
 
     def tensor(self):
-        import torch
+        torch = try_import('torch', 'cv_math: need torch here.')
         assert self.transform is not None, 'Use set_transform first !'
         img = self.transform(self.cv_image)
         return torch.unsqueeze(img, 0)
