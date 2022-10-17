@@ -115,4 +115,4 @@ def try_import(module_name, warn_message=None):
     try:
         return import_module(module_name)
     except Exception as e:
-        cv_print('got exception: {}, {}'.format(e, warn_message), 'error')
+        cv_print('got exception: {}, {}'.format(e, warn_message),  level='error')

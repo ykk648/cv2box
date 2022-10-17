@@ -90,3 +90,10 @@ class CVFolder:
         cmd = '7z a -t7z -r {} {} -mx{} -p{} -v{}'.format(self.save_path + output_file_name, self.root_path,
                                                           compress_level, pwd, volumes,)
         os_call(cmd)
+
+    def uncompress_(self):
+        # tar tar.gz tgz tar.tgz : tar zxvf File.*
+        # unzip File.* -d Dir
+        # unrar x File.*
+        # 7z x File.*
+        pass
