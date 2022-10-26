@@ -96,10 +96,12 @@ class CVFile:
             json.dump(data_in, f)
 
     def npy_write(self, data_in):
-        assert type(data_in) is np.array
+        os.makedirs(str(Path(self.file_path).parent), exist_ok=True)
+        assert type(data_in) in [np.array, np.ndarray]
         np.save(self.file_path, data_in)
 
     def npz_write(self, data_in):
+        os.makedirs(str(Path(self.file_path).parent), exist_ok=True)
         assert type(data_in) is dict
         np.savez(self.file_path, data_in)
 
