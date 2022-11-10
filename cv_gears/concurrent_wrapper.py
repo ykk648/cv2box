@@ -9,9 +9,9 @@ import concurrent.futures
 from tqdm import tqdm
 
 
-def tqdm_parallel_map(fn, *iterables):
+def tqdm_parallel_map(fn, *iterables, max_workers=32):
     """ use tqdm to show progress"""
-    executor = concurrent.futures.ProcessPoolExecutor()
+    executor = concurrent.futures.ProcessPoolExecutor(max_workers=max_workers)
     futures_list = []
     for iterable in iterables:
         futures_list += [executor.submit(fn, i) for i in iterable]
@@ -19,12 +19,12 @@ def tqdm_parallel_map(fn, *iterables):
         yield f.result()
 
 
-def thread_pool_wrapper(single_job_fn, data_list):
+def thread_pool_wrapper(single_job_fn, data_list, max_workers=32):
     """
     multi cpu dispatcher
     """
     output = []
-    for result in tqdm_parallel_map(single_job_fn, data_list):
+    for result in tqdm_parallel_map(single_job_fn, data_list, max_workers=max_workers):
         if result is not None:
             output += result
     return output

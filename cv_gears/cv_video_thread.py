@@ -47,7 +47,7 @@ class CVVideoThread(Process):
             for _ in tqdm(range(len(cvvl))):
                 _, frame = cvvl.get()
 
-                something_out = frame
+                something_out = [frame]
 
                 if self.fps_counter:
                     counter += 1

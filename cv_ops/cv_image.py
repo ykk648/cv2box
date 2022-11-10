@@ -121,17 +121,11 @@ class CVImage(ImageBasic):
     def __init__(self, image_in, image_format='cv2', image_size=None):
         super().__init__(image_in, image_format, image_size)
         self.transform = None
-        self.input_std = self.input_mean = self.input_size = None
 
-    # ===== for preprocess data through cv2 to onnx model =====
-    def set_blob(self, input_std, input_mean, input_size):
-        self.input_std = input_std
-        self.input_mean = input_mean
-        self.input_size = input_size
-        return self
-
-    def blob_in(self, rgb=False):
+    # ===== for image preprocess =====
+    def blob(self, input_size, input_mean=127.5, input_std=127.5, rgb=False):
         """
+        for preprocess data through cv2 to onnx model
         same as:
             MEAN = 255 * np.array([0.5, 0.5, 0.5])
             STD = 255 * np.array([0.5, 0.5, 0.5])
@@ -139,12 +133,56 @@ class CVImage(ImageBasic):
             x = (x - MEAN[:, None, None]) / STD[:, None, None]
         Returns: 1*3*size*size
         """
-        assert self.input_std and self.input_mean and self.input_size, 'Use set_blob first!'
         if not isinstance(self.cv_image, list):
             self.cv_image = [self.cv_image]
 
-        return cv2.dnn.blobFromImages(self.cv_image, 1.0 / self.input_std, self.input_size,
-                                      (self.input_mean, self.input_mean, self.input_mean), swapRB=rgb)
+        return cv2.dnn.blobFromImages(self.cv_image, 1.0 / input_std, input_size,
+                                      (input_mean, input_mean, input_mean), swapRB=rgb)
+
+    def blob_innormal(self, input_size, input_mean=[127.5, 127.5, 127.5], input_std=[127.5, 127.5, 127.5], rgb=False):
+        """
+        Support 3-channel std/mean, inplace normalize an image with mean and std.
+        supprt list/tuple/0-1/1-255
+        Args:
+            mean (ndarray): The mean to be used for normalize.
+            std (ndarray): The std to be used for normalize.
+            to_rgb (bool): Whether to convert to rgb.
+        Returns:
+            ndarray: The normalized image.
+        """
+        # cv2 inplace normalization does not accept 0-1/uint8
+
+        self.resize(input_size)
+        if rgb:
+            cv2.cvtColor(self.cv_image, cv2.COLOR_BGR2RGB, self.cv_image)  # inplace
+        self.cv_image = np.ascontiguousarray(self.cv_image, dtype=np.float32)
+        mean = np.float64(np.array(input_mean).reshape(1, -1))
+        stdinv = 1 / np.float64(np.array(input_std).reshape(1, -1))
+        if input_mean[0] < 1 or input_std[0] < 1:
+            mean *= 255
+            stdinv /= 255
+        cv2.subtract(self.cv_image, mean, self.cv_image)  # inplace
+        cv2.multiply(self.cv_image, stdinv, self.cv_image)  # inplace
+        return self.cv_image.transpose(2, 0, 1)[np.newaxis,]
+
+    def tensor(self, transform=None):
+        """
+        convert numpy image to transformed tensor
+        Args:
+            transform:
+        Returns:
+        """
+        torch = try_import('torch', 'cv_image: need torch here.')
+        transforms = try_import('torchvision.transforms', 'cv_image: need torchvision here.')
+
+        if not transform:
+            transform = transforms.Compose([
+                transforms.ToTensor(),
+                # transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
+            ])
+
+        img = self.transform(self.cv_image)
+        return torch.unsqueeze(img, 0)
 
     def t_normal(self, mean, std, inplace=True):
         """
@@ -157,52 +195,11 @@ class CVImage(ImageBasic):
         """
         Using torch , support CHW and BCHW
         """
-        torch = try_import('torch', 'cv_math: need torch here.')
+        torch = try_import('torch', 'cv_image: need torch here.')
         if self.cv_image.ndim == 4:
             self.cv_image = torch.from_numpy(x.astype('float32')).permute(3, 1, 2).to(device).div_(255.0)
         else:
             self.cv_image = torch.from_numpy(x.astype('float32')).permute(2, 0, 1).to(device).div_(255.0)
-
-    def innormal(self, mean, std, to_rgb=False):
-        """
-        Inplace normalize an image with mean and std.
-        Args:
-            mean (ndarray): The mean to be used for normalize.
-            std (ndarray): The std to be used for normalize.
-            to_rgb (bool): Whether to convert to rgb.
-        Returns:
-            ndarray: The normalized image.
-        """
-        # cv2 inplace normalization does not accept uint8
-        self.cv_image = np.float32(self.cv_image)
-        mean = np.array(mean, dtype=np.float32)
-        std = np.array(std, dtype=np.float32)
-        assert self.cv_image.dtype != np.uint8
-        mean = np.float64(mean.reshape(1, -1))
-        stdinv = 1 / np.float64(std.reshape(1, -1))
-        if to_rgb:
-            cv2.cvtColor(self.cv_image, cv2.COLOR_BGR2RGB, self.cv_image)  # inplace
-        cv2.subtract(self.cv_image, mean, self.cv_image)  # inplace
-        cv2.multiply(self.cv_image, stdinv, self.cv_image)  # inplace
-        return self.cv_image
-
-    # ===== convert numpy image to transformed tensor =====
-    def set_transform(self, transform=None):
-        transforms = try_import('torchvision.transforms', 'cv_math: need torchvision here.')
-        if transform:
-            self.transform = transform
-        else:
-            self.transform = transforms.Compose([
-                transforms.ToTensor(),
-                transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
-            ])
-        return self
-
-    def tensor(self):
-        torch = try_import('torch', 'cv_math: need torch here.')
-        assert self.transform is not None, 'Use set_transform first !'
-        img = self.transform(self.cv_image)
-        return torch.unsqueeze(img, 0)
 
     # ===== for data preprocess and postprocess =====
     def resize_keep_ratio(self, target_size, pad_value=(0, 0, 0)):
@@ -328,6 +325,37 @@ class CVImage(ImageBasic):
         loc[:, 0] = np.round(loc[:, 0] * image_shape_[0] / ratio + left)
         loc[:, 1] = np.round(loc[:, 1] * image_shape_[1] / ratio + top)
         return loc
+
+    @staticmethod
+    def recover_from_reverse_matrix(img_fg, img_bg, mat_rev, img_fg_mask=None):
+        """
+        Args:
+            img_fg:
+            img_bg:
+            mat_rev:
+            img_fg_mask: 0-1 (h,w,1)
+        Returns:
+        """
+        ne = try_import('numexpr', 'cv_image: this func need numexpr')
+        # ne.set_num_threads(1)
+        img_fg_trans = cv2.warpAffine(img_fg, mat_rev, img_bg.shape[:2][::-1], borderMode=cv2.BORDER_REPLICATE)
+
+        if img_fg_mask is None:
+            from ..utils.util import mat2mask
+            from cv2box import MyFpsCounter
+            # with MyFpsCounter() as mfs:
+            img_fg_mask = mat2mask(img_bg, mat_rev)
+        else:
+            img_fg_mask = cv2.warpAffine(img_fg_mask, mat_rev, img_bg.shape[:2][::-1])[..., np.newaxis]
+        local_dict = {
+            'img_fg_mask': img_fg_mask,
+            'img_fg_trans': img_fg_trans,
+            'img_bg': img_bg,
+        }
+        img = ne.evaluate('img_fg_mask * (img_fg_trans * 255)+(1 - img_fg_mask) * img_bg', local_dict=local_dict,
+                          global_dict=None)
+        img = img.astype(np.uint8)
+        return img
 
     # ===== for points read and draw =====
     @staticmethod
