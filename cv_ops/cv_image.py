@@ -131,6 +131,11 @@ class CVImage(ImageBasic):
             STD = 255 * np.array([0.5, 0.5, 0.5])
             x = x.transpose(-1, 0, 1)
             x = (x - MEAN[:, None, None]) / STD[:, None, None]
+        Args:
+            input_size: (w,h)
+            input_mean:
+            input_std:
+            rgb:
         Returns: 1*3*size*size
         """
         if not isinstance(self.cv_image, list):

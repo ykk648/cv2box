@@ -1,4 +1,4 @@
-# VERSION 0.4.5
+# VERSION 0.4.7
 import os
 
 try:

@@ -14,7 +14,6 @@ def destroy_shell(dir_path, shell_name):
 
 
 def batch_uncompress(dir_path, pwd, pwd_flag=None):
-
     for f in os.listdir(dir_path):
         f_p = os.path.join(dir_path, f)
         if os.path.isdir(f_p):
@@ -32,4 +31,4 @@ if __name__ == '__main__':
     p = ''
     # get_shell(p, 'uncompress')
     # destroy_shell(p, 'uncompress')
-    batch_uncompress(p, '',pwd_flag='密码')
+    batch_uncompress(p, '', pwd_flag='密码')
