@@ -65,6 +65,7 @@ class CVFile:
                 with open(file_path, 'rb') as f:
                     self.file_data = yaml.safe_load(f)
             elif self.suffix == '.csv':
+                # index_col=False dtype={'col':str}
                 import pandas as pd
                 self.file_data = pd.read_csv(file_path, **kwargs)
 

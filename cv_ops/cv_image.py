@@ -186,7 +186,7 @@ class CVImage(ImageBasic):
                 # transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
             ])
 
-        img = self.transform(self.cv_image)
+        img = transforms(self.cv_image)
         return torch.unsqueeze(img, 0)
 
     def t_normal(self, mean, std, inplace=True):
@@ -351,7 +351,7 @@ class CVImage(ImageBasic):
             # with MyFpsCounter() as mfs:
             img_fg_mask = mat2mask(img_bg, mat_rev)
         else:
-            img_fg_mask = cv2.warpAffine(img_fg_mask, mat_rev, img_bg.shape[:2][::-1])[..., np.newaxis]
+            img_fg_mask = cv2.warpAffine(img_fg_mask, mat_rev, img_bg.shape[:2][::-1], borderMode=cv2.BORDER_REPLICATE)[..., np.newaxis]
         local_dict = {
             'img_fg_mask': img_fg_mask,
             'img_fg_trans': img_fg_trans,
