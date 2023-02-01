@@ -52,6 +52,9 @@ class ImageBasic:
     def rgb(self):
         return cv2.cvtColor(self.cv_image, cv2.COLOR_BGR2RGB)
 
+    def rgba(self):
+        return cv2.cvtColor(self.cv_image, cv2.COLOR_BGR2RGBA)
+
     @property
     def bgr(self):
         return self.cv_image
@@ -144,7 +147,8 @@ class CVImage(ImageBasic):
         return cv2.dnn.blobFromImages(self.cv_image, 1.0 / input_std, input_size,
                                       (input_mean, input_mean, input_mean), swapRB=rgb)
 
-    def blob_innormal(self, input_size, input_mean=[127.5, 127.5, 127.5], input_std=[127.5, 127.5, 127.5], rgb=False):
+    def blob_innormal(self, input_size, input_mean=[127.5, 127.5, 127.5], input_std=[127.5, 127.5, 127.5], rgb=False,
+                      interpolation=cv2.INTER_LINEAR):
         """
         Support 3-channel std/mean, inplace normalize an image with mean and std.
         supprt list/tuple/0-1/1-255
@@ -157,7 +161,7 @@ class CVImage(ImageBasic):
         """
         # cv2 inplace normalization does not accept 0-1/uint8
 
-        self.resize(input_size)
+        self.resize(input_size, interpolation=interpolation)
         if rgb:
             cv2.cvtColor(self.cv_image, cv2.COLOR_BGR2RGB, self.cv_image)  # inplace
         self.cv_image = np.ascontiguousarray(self.cv_image, dtype=np.float32)
@@ -351,7 +355,8 @@ class CVImage(ImageBasic):
             # with MyFpsCounter() as mfs:
             img_fg_mask = mat2mask(img_bg, mat_rev)
         else:
-            img_fg_mask = cv2.warpAffine(img_fg_mask, mat_rev, img_bg.shape[:2][::-1], borderMode=cv2.BORDER_REPLICATE)[..., np.newaxis]
+            img_fg_mask = cv2.warpAffine(img_fg_mask, mat_rev, img_bg.shape[:2][::-1], borderMode=cv2.BORDER_REPLICATE)[
+                ..., np.newaxis]
         local_dict = {
             'img_fg_mask': img_fg_mask,
             'img_fg_trans': img_fg_trans,

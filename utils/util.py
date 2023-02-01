@@ -133,7 +133,7 @@ def mfc(flag='Your Func Name'):
 def get_path_by_ext(this_dir, ext_list=None, sorted_by_stem=False):
     if ext_list is None:
         print('Use image ext as default !')
-        ext_list = [".jpg", ".png", ".JPG", ".webp", ".jpeg"]
+        ext_list = [".jpg", ".png", ".JPG", ".webp", ".jpeg", ".tiff"]
     if sorted_by_stem:
         return sorted([p for p in Path(this_dir).rglob('*') if p.suffix in ext_list], key=lambda x: int(x.stem))
     else:

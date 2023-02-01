@@ -1,4 +1,4 @@
-from apscheduler.schedulers.blocking import BlockingScheduler
+
 # from datetime import datetime
 
 
@@ -10,6 +10,7 @@ def scheduler(my_job, run_datetime, args_=None):
     :param run_datetime: datetime(2021, 8, 26, 11, 30, 5)
     :return:
     """
-    sched = BlockingScheduler()
+    from apscheduler.schedulers.blocking import BlockingScheduler
+    sched = BlockingScheduler(timezone='Asia/Shanghai')
     sched.add_job(my_job, 'date', run_date=run_datetime, args=args_)
     sched.start()

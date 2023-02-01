@@ -96,6 +96,17 @@ class CVFile:
         with open(self.file_path, 'w', encoding='utf-8') as f:
             json.dump(data_in, f)
 
+    def json_update(self, data_in):
+        with open(self.file_path, 'rb') as f:
+            file_data = json.load(f)
+        if isinstance(data_in, dict):
+            for k, v in data_in.items():
+                if isinstance(v, np.bool_):
+                    data_in[k] = bool(v)
+                file_data[k] = v
+        with open(self.file_path, 'w', encoding='utf-8') as f:
+            json.dump(data_in, f)
+
     def npy_write(self, data_in):
         os.makedirs(str(Path(self.file_path).parent), exist_ok=True)
         assert type(data_in) in [np.array, np.ndarray]
