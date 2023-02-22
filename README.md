@@ -5,7 +5,7 @@
 pip install cv2box
 
 # clean install - no other dependencies
-pip install cv2box[light] 
+pip install cv2box --no-dependencies
 
 # full install - referring requirements.txt
 pip install cv2box[full]
