@@ -46,7 +46,9 @@ class CVVideoThread(Process):
 
         with CVVideoLoader(self.video_path) as cvvl:
             for _ in tqdm(range(len(cvvl))):
-                _, frame = cvvl.get()
+                success, frame = cvvl.get()
+                if not success:
+                    break
 
                 something_out = [frame]
 
