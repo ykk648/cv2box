@@ -203,10 +203,9 @@ class CVVideo:
         video_capture.release()
 
     def resize_video(self, out_size=(768, 1024), inplace=False):
-
         out_p = self.video_path.replace('.mp4', '_{}x{}.mp4'.format(out_size[0], out_size[1]))
         if inplace:
-            os.system('mv {} {}'.format(self.video_path, out_p))
+            shutil.move(self.video_path, out_p)
             self.video_path, out_p = out_p, self.video_path
 
         cap = cv2.VideoCapture(self.video_path)
@@ -223,7 +222,7 @@ class CVVideo:
         cap.release()
 
         if inplace:
-            os.system('rm {} &'.format(self.video_path))
+            os.remove(self.video_path)
 
     def video_concat(self, video_path_2, concat_mode=None, copy_audio=True):
         assert concat_mode in ['vstack', 'hstack'], 'Need name concat_mode to \'vstack\' or \'hstack\' !'
@@ -308,6 +307,9 @@ class CVVideoLoader(object, ):
         self.size = (int(self.cap.get(cv2.CAP_PROP_FRAME_WIDTH)),
                      int(self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT)))
         self.frames_num = self.cap.get(7)
+        codec = int(self.cap.get(cv2.CAP_PROP_FOURCC))
+        self.codec = chr(codec & 0xFF) + chr((codec >> 8) & 0xFF) + chr((codec >> 16) & 0xFF) + chr(
+                (codec >> 24) & 0xFF)
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):

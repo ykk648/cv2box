@@ -45,7 +45,9 @@ class CVVideoThread(Process):
         start_time = time.time()
 
         with CVVideoLoader(self.video_path) as cvvl:
-            for _ in tqdm(range(len(cvvl))):
+            # ref https://stackoverflow.com/questions/31472155/python-opencv-cv2-cv-cv-cap-prop-frame-count-get-wrong-numbers
+            # cv2.CAP_PROP_FRAME_COUNT returns false count in some videos
+            for _ in tqdm(range(len(cvvl) + 15)):
                 success, frame = cvvl.get()
                 if not success:
                     break
