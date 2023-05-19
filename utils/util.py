@@ -11,6 +11,7 @@ import numpy as np
 from .logging import cv_print
 import platform
 import cv2
+from io import StringIO
 
 
 def mat2mask(frame, mat):
@@ -145,3 +146,18 @@ def try_import(module_name, warn_message=None):
         return import_module(module_name)
     except Exception as e:
         cv_print('got exception: {}, {}'.format(e, warn_message), level='error')
+
+
+class OutCapture(list):
+    """
+    capture output to string
+    """
+    def __enter__(self):
+        self._stdout = sys.stdout
+        sys.stdout = self._stringio = StringIO()
+        return self
+
+    def __exit__(self, *args):
+        self.extend(self._stringio.getvalue().splitlines())
+        del self._stringio  # free up some memory
+        sys.stdout = self._stdout

@@ -55,6 +55,9 @@ class ImageBasic:
     def rgba(self):
         return cv2.cvtColor(self.cv_image, cv2.COLOR_BGR2RGBA)
 
+    def gray(self):
+        return cv2.cvtColor(self.cv_image, cv2.COLOR_BGR2GRAY)
+
     @property
     def bgr(self):
         return self.cv_image
