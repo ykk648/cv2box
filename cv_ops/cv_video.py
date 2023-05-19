@@ -40,8 +40,9 @@ class CVVideo:
                 int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)))
         cap.release()
         print(
-            'video info:\nname: {}\nfourcc: {}\nfps: {}\nsize: {}'.format(self.video_name, decode_fourcc(fourcc), fps,
-                                                                          size))
+            'video info:\nname: {}\nfourcc: {}\nframe_number: {}\nfps: {}\nsize: {}'.format(self.video_name,
+                                                                                            decode_fourcc(fourcc),
+                                                                                            frame_number, fps, size))
 
     def show_video_cv(self, delay=100):
         cap = cv2.VideoCapture(self.video_path)
@@ -100,17 +101,24 @@ class CVVideo:
         os_call(command)
 
     def cut_video(self, start, last_time, accurate=False):
+        """
+        :param start: start time(s)
+        :param last_time: video clip length(s)
+        :param accurate: using keyframe or not
+        :return:
+        """
         assert re.match(r"(\d{1,2}:\d{1,2}:\d{1,2})",
                         start) is not None, 'The time format: start:00:00:15 last_time:00:00:15 etc.'
         assert re.match(r"(\d{1,2}:\d{1,2}:\d{1,2})",
                         last_time) is not None, 'The time format: start:00:00:15 last_time:00:00:15 etc.'
+        cut_out_video_path = self.video_dir + '/' + self.prefix + '_cut_out.mp4'
         if not accurate:
-            command = 'ffmpeg -y -ss {} -t {} -i {} -codec copy {}.mp4'.format(start, last_time, self.video_path,
-                                                                               self.video_dir + '/' + self.prefix + '_cut_out')
+            command = 'ffmpeg -y -ss {} -t {} -i {} -codec copy {}'.format(start, last_time, self.video_path,
+                                                                           cut_out_video_path)
         else:
-            command = 'ffmpeg -y -ss {} -t {} -i {} {}.mp4'.format(start, last_time, self.video_path,
-                                                                   self.video_dir + '/' + self.prefix + '_cut_out')
+            command = 'ffmpeg -y -ss {} -t {} -i {} {}'.format(start, last_time, self.video_path, cut_out_video_path)
         os_call(command)
+        return cut_out_video_path
 
     def add_text(self, text, left_top_coord: tuple, fontsize=20):
 
@@ -207,6 +215,17 @@ class CVVideo:
         if inplace:
             shutil.move(self.video_path, out_p)
             self.video_path, out_p = out_p, self.video_path
+            # os.remove(self.video_path)
+        os_call(
+            f'ffmpeg -y -loglevel error -i {self.video_path} -s {out_size[0]}x{out_size[1]} -c:a copy {out_p}')
+        if inplace:
+            os.remove(self.video_path)
+
+    def resize_video_cv(self, out_size=(768, 1024), inplace=False):
+        out_p = self.video_path.replace('.mp4', '_{}x{}.mp4'.format(out_size[0], out_size[1]))
+        if inplace:
+            shutil.move(self.video_path, out_p)
+            self.video_path, out_p = out_p, self.video_path
 
         cap = cv2.VideoCapture(self.video_path)
         fps = cap.get(cv2.CAP_PROP_FPS)
@@ -289,6 +308,7 @@ class CVVideo:
                                                                              video_out_p.replace('_concat_out.mp4',
                                                                                                  '_concat_out_audio.mp4')))
             os_call('rm ./temp.m4a')
+            os_call(f'rm {video_out_p}')
 
         return video_out_p
 
@@ -309,7 +329,7 @@ class CVVideoLoader(object, ):
         self.frames_num = self.cap.get(7)
         codec = int(self.cap.get(cv2.CAP_PROP_FOURCC))
         self.codec = chr(codec & 0xFF) + chr((codec >> 8) & 0xFF) + chr((codec >> 16) & 0xFF) + chr(
-                (codec >> 24) & 0xFF)
+            (codec >> 24) & 0xFF)
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):

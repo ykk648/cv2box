@@ -47,7 +47,7 @@ class CVFile:
                 with open(file_path, 'rb') as f:
                     self.file_data = pickle.load(f)
             elif self.suffix == '.txt':
-                with open(file_path, 'rb') as f:
+                with open(file_path, encoding='utf-8', mode='r') as f:
                     self.file_data = f.readlines()
             elif self.suffix == '.json':
                 with open(file_path, 'rb') as f:
@@ -93,8 +93,8 @@ class CVFile:
             for k, v in data_in.items():
                 if isinstance(v, np.bool_):
                     data_in[k] = bool(v)
-        with open(self.file_path, 'w', encoding='utf-8') as f:
-            json.dump(data_in, f)
+        with open(self.file_path, 'w', encoding='utf-8', ) as f:
+            json.dump(data_in, f, ensure_ascii=False)
 
     def json_update(self, data_in):
         with open(self.file_path, 'rb') as f:
