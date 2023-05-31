@@ -65,19 +65,16 @@ class CVBbox:
 
     def area_center_filter(self, image_shape, max_num=1):
         """
-
         Args:
-            image_shape: HWC
-            max_num:
-
-        Returns:
-
+            image_shape: HWC from origin full image
+            max_num: max number of bbox
+        Returns: new bbox list [[bbox, index], ...]
         """
         if len(self.bbox_array) == 0:
             return [[]]
         box_results = []
-        dummy1 = []
-        dummy2 = []
+        dummy1 = []  # center dis
+        dummy2 = []  # area
         if not isinstance(self.bbox_array, list):
             self.bbox_array = self.bbox_array.tolist()
         box_list_temp = self.bbox_array.copy()
@@ -90,7 +87,7 @@ class CVBbox:
         for i in range(max_num):
             aim_ind = np.argmax(np.array(box_area_dis))
 
-            box_results.append(box_list_temp[aim_ind])
+            box_results.append([box_list_temp[aim_ind], aim_ind])
             box_list_temp.pop(aim_ind)
             box_area_dis.tolist().pop(aim_ind)
         return box_results

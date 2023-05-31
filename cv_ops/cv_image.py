@@ -360,6 +360,10 @@ class CVImage(ImageBasic):
         else:
             img_fg_mask = cv2.warpAffine(img_fg_mask, mat_rev, img_bg.shape[:2][::-1], borderMode=cv2.BORDER_REPLICATE)[
                 ..., np.newaxis]
+
+        # # clip
+        # img_fg_mask[img_fg_mask > 0.2] = 1
+
         local_dict = {
             'img_fg_mask': img_fg_mask,
             'img_fg_trans': img_fg_trans,

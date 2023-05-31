@@ -4,7 +4,7 @@
 # @Project : https://github.com/ykk648/cv2box
 from ... import try_import
 
-AES = try_import('Crypto.Cipher', 'cv_encrypt need crypto: pip install pycryptodome')
+AES = try_import('Crypto.Cipher.AES', 'cv_encrypt need crypto: pip install pycryptodome')
 import operator
 import time
 from pathlib import Path

@@ -76,6 +76,11 @@ class Normalize:
             return self.aim_in
         return self.aim_in / norm
 
+    def batch_norm(self, axis=-1, order=2):
+        l2 = np.atleast_1d(np.linalg.norm(self.aim_in, order, axis))
+        l2[l2 == 0] = 1
+        return self.aim_in / np.expand_dims(l2, axis)
+
     def torch_l2_norm(self, axis=1):
         torch = try_import('torch', 'cv_math: need torch here.')
         if not isinstance(self.aim_in, torch.tensor):

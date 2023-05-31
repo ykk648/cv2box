@@ -312,6 +312,31 @@ class CVVideo:
 
         return video_out_p
 
+    def extract_audio(self, output_path=None):
+        if not output_path:
+            output_path = self.video_path.replace('.mp4', '_audio.wav')
+        os_call(f'ffmpeg -i {self.video_path} -vn -acodec pcm_s16le -ar 44100 -ac 2 {output_path}')
+
+    def copy_audio(self, audio_src):
+        """
+        support mp4 or wav
+        ffmpeg -hide_banner -i "input.mp4" -i "input1.wav" -i "input2.wav" -filter_complex "[1:a]volume=1.5[a1];[2:a]volume=1[a2];[a1][a2]amix=inputs=2:duration=first:dropout_transition=0" -c:v "libx264" -c:a 'aac' -y "mix.mp4"
+        :param audio_src:
+        :return:
+        """
+        # mod to mkv when met "Could not find tag for codec pcm_s24le in stream #1"
+        # output_path = self.video_path.replace('.mp4', '_audio_replaced.mkv')
+        output_path = self.video_path.replace('.mp4', '_audio_replaced.mp4')
+        if Path(audio_src).suffix == '.mp4':
+            audio_temp_path = audio_src.replace('.mp4', '_temp.mp4')
+            os_call(f'ffmpeg -i {audio_src} -vn -codec copy {audio_temp_path}')
+            os_call(
+                f'ffmpeg -i {self.video_path} -i {audio_temp_path} -vcodec copy -acodec copy -map 0:v:0 -map 1:a:0 {output_path}')
+            os.remove(audio_temp_path)
+        else:
+            os_call(
+                f'ffmpeg -i {self.video_path} -i {audio_src} -c copy -map 0:v -map 1:a -shortest {output_path}')
+
 
 class CVVideoLoader(object, ):
     """
