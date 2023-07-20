@@ -39,6 +39,23 @@ def mat2mask(frame, mat):
     img_mask = np.reshape(img_mask, [img_mask.shape[0], img_mask.shape[1], 1]).astype(np.float32)
     return img_mask
 
+def common_face_mask(mask_shape):
+    mask = np.zeros((512, 512)).astype(np.float32)
+    # cv2.circle(mask, (285, 285), 110, (255, 255, 255), -1)  # -1 表示实心
+    cv2.ellipse(mask, (256, 256), (220, 160), 90, 0, 360, (255, 255, 255), -1)
+    thres = 20
+    mask[:thres, :] = 0
+    mask[-thres:, :] = 0
+    mask[:, :thres] = 0
+    mask[:, -thres:] = 0
+    # blur the mask
+    # mask = cv2.GaussianBlur(mask, (101, 101), 11)
+    mask = cv2.stackBlur(mask, (201, 201))
+    # remove the black borders
+
+    mask = mask / 255.
+    mask = cv2.resize(mask, mask_shape)
+    return mask[..., np.newaxis]
 
 def system_judge():
     """

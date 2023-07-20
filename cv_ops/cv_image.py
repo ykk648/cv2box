@@ -339,10 +339,10 @@ class CVImage(ImageBasic):
         return loc
 
     @staticmethod
-    def recover_from_reverse_matrix(img_fg, img_bg, mat_rev, img_fg_mask=None):
+    def recover_from_reverse_matrix(img_fg, img_bg, mat_rev, img_fg_mask=None, blur=False):
         """
         Args:
-            img_fg:
+            img_fg: 0-1
             img_bg:
             mat_rev:
             img_fg_mask: 0-1 (h,w,1)
@@ -353,15 +353,18 @@ class CVImage(ImageBasic):
         img_fg_trans = cv2.warpAffine(img_fg, mat_rev, img_bg.shape[:2][::-1], borderMode=cv2.BORDER_REPLICATE)
 
         if img_fg_mask is None:
-            from ..utils.util import mat2mask
-            from cv2box import MyFpsCounter
+            from ..utils.util import common_face_mask
+            # from cv2box import MyFpsCounter
             # with MyFpsCounter() as mfs:
-            img_fg_mask = mat2mask(img_bg, mat_rev)
+            # img_fg_mask = mat2mask(img_bg, mat_rev)
+            img_fg_mask = common_face_mask(img_bg.shape[:2][::-1])
         else:
-            img_fg_mask = cv2.warpAffine(img_fg_mask, mat_rev, img_bg.shape[:2][::-1], borderMode=cv2.BORDER_REPLICATE)[
+            img_fg_mask = cv2.warpAffine(img_fg_mask, mat_rev, img_bg.shape[:2][::-1], borderValue=0)[
                 ..., np.newaxis]
 
-        # # clip
+        if blur:
+            img_fg_mask = cv2.stackBlur(img_fg_mask, (201, 201))[..., np.newaxis]
+        # clip
         # img_fg_mask[img_fg_mask > 0.2] = 1
 
         local_dict = {

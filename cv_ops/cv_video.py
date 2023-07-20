@@ -320,7 +320,7 @@ class CVVideo:
     def copy_audio(self, audio_src):
         """
         support mp4 or wav
-        ffmpeg -hide_banner -i "input.mp4" -i "input1.wav" -i "input2.wav" -filter_complex "[1:a]volume=1.5[a1];[2:a]volume=1[a2];[a1][a2]amix=inputs=2:duration=first:dropout_transition=0" -c:v "libx264" -c:a 'aac' -y "mix.mp4"
+        ffmpeg -y -hide_banner -i "input.mp4" -i "input1.wav" -i "input2.wav" -filter_complex "[1:a]volume=1.5[a1];[2:a]volume=1[a2];[a1][a2]amix=inputs=2:duration=first:dropout_transition=0" -c:v "libx264" -c:a 'aac' -y "mix.mp4"
         :param audio_src:
         :return:
         """
@@ -421,8 +421,3 @@ class CVVideoMaker(object, ):
             'ffmpeg -framerate {} -i {} -c:a copy -shortest -c:v libx264 -pix_fmt yuv420p {}'.format(
                 # 'ffmpeg -f image2 -i {} -vcodec libx264 -vf "pad=ceil(iw/2)*2:ceil(ih/2)*2,fps={},format=yuv420p" {}'.format(
                 frame_rate, frame_path_name, output_video_path))
-
-
-'''
-ffmpeg -y -threads 4 -start_number 0 -r 30 -i vis_results/dancecut_pare.mp4_output_temp/%06d.png -frames:v 900 -profile:v baseline -level 3.0 -c:v libx264 -pix_fmt yuv420p -an -v error -loglevel error vis_results/dancecut_pare.mp4
-'''

@@ -185,7 +185,7 @@ class CVMultiVideoThread(Process):
 
 
 if __name__ == '__main__':
-    source_list = [0, 2, 4, 6]
+    source_list = [0, 2, 4, 6]  # support RTMP
     q1 = Queue(5)
 
     cvmt = CVMultiVideoThread(source_list, [q1])
