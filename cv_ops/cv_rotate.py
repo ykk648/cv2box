@@ -5,7 +5,7 @@
 import numpy as np
 from ..utils import try_import
 
-try_import('torch', 'cv_rotate: need torch')
+torch = try_import('torch', 'cv_rotate: need torch')
 
 
 # from torch.nn import functional as F
