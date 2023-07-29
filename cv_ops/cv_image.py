@@ -58,6 +58,17 @@ class ImageBasic:
     def gray(self):
         return cv2.cvtColor(self.cv_image, cv2.COLOR_BGR2GRAY)
 
+    def mask(self, rgb=False):
+        """
+        Args:
+            rgb:
+        Returns: (H,W,1)
+        """
+        if rgb:
+            return self.rgb()[:, :, 0][:, :, None]
+        else:
+            return self.cv_image[:, :, 0][:, :, None]
+
     @property
     def bgr(self):
         return self.cv_image
@@ -182,7 +193,7 @@ class CVImage(ImageBasic):
         convert numpy image to transformed tensor
         Args:
             transform:
-        Returns:
+        Returns: (1,C,H,W)
         """
         torch = try_import('torch', 'cv_image: need torch here.')
         transforms = try_import('torchvision.transforms', 'cv_image: need torchvision here.')
@@ -193,7 +204,7 @@ class CVImage(ImageBasic):
                 # transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
             ])
 
-        img = transforms(self.cv_image)
+        img = transform(self.cv_image)
         return torch.unsqueeze(img, 0)
 
     def t_normal(self, mean, std, inplace=True):
