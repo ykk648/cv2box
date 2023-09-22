@@ -44,7 +44,7 @@ CVImage(img_in_pillow, image_format='pillow').resize(256,256).save('image save p
 trans = {}
 CVImage(img_in).set_transform(trans).tensor.cuda()
 # image2cvblob
-onnx_input = CVImage(img_in).set_blob(127.5,127.5,(112,112)).blob_rgb
+onnx_input = CVImage(img_in).blob(127.5,127.5,(112,112)).blob_rgb
 
 ```
 

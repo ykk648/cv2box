@@ -8,6 +8,7 @@ import json
 import numpy as np
 import os
 import base64
+from ..utils import try_import
 
 
 def data_resolve(data_in, iter_times, dummy):
@@ -56,17 +57,17 @@ class CVFile:
                 # h = arrays['key'][()]
                 self.file_data = np.load(file_path, allow_pickle=True)
             elif self.suffix == '.h5':
-                import h5py
+                h5py = try_import('h5py', 'cv_file: pip install h5py')
                 self.file_data = h5py.File(self.file_path, "r")
             elif self.suffix == '.npy':
                 self.file_data = np.load(self.file_path, allow_pickle=True)
             elif self.suffix == '.yaml' or self.suffix == '.yml':
-                import yaml
+                yaml = try_import('yaml', 'cv_file: pip install yaml')
                 with open(file_path, 'rb') as f:
                     self.file_data = yaml.safe_load(f)
             elif self.suffix == '.csv':
+                pd = try_import('pandas', 'cv_file: pip install pandas')
                 # index_col=False dtype={'col':str}
-                import pandas as pd
                 self.file_data = pd.read_csv(file_path, **kwargs)
 
     @property

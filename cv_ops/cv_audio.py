@@ -96,13 +96,13 @@ def preemphasis(wav, k, preemphasize=True):
 
 
 class CVAudio:
-    def __init__(self, audio_path, sr=16000):
+    def __init__(self, audio_path, sr=16000, mono=True):
         self.audio_path = audio_path
         self.sr = sr
         self.num_frames = None
         self.fps = None
         if audio_path:
-            self.audio = librosa.core.load(self.audio_path, sr=sr)[0]
+            self.audio = librosa.core.load(self.audio_path, sr=sr, mono=mono)[0]
 
     @property
     def data(self):

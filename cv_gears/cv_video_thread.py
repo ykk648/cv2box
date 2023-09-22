@@ -38,7 +38,9 @@ class CVVideoThread(Process):
         return cls.__name__
 
     def run(self, ):
-
+        """
+        Returns: BGR [frame]
+        """
         counter = 0
         time_sum = 0
         queue_full_counter = 0

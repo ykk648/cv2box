@@ -14,17 +14,17 @@ import queue
 from ..utils import cv_print as print
 
 if os.environ['CV_MULTI_MODE'] == 'multi-thread':
-    from multiprocessing.dummy import Process, Queue, Lock
+    from multiprocessing.dummy import Process, Queue, Lock, Manager, Event
 elif os.environ['CV_MULTI_MODE'] == 'multi-process':
-    from multiprocessing import Process, Queue, Lock
+    from multiprocessing import Process, Queue, Lock, Manager, Event
 elif os.environ['CV_MULTI_MODE'] == 'torch-process':
-    from torch.multiprocessing import Process, Queue, Lock
+    from torch.multiprocessing import Process, Queue, Lock, Manager, Event
 
 
 class Factory(Process):
     def __init__(self, queue_list: list, fps_counter=False, block=True):
         super().__init__()
-        assert len(queue_list) == 1
+        # assert len(queue_list) == 1
         self.queue_list = queue_list
         self.fps_counter = fps_counter
         self.block = block

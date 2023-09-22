@@ -48,7 +48,7 @@ Now supports mode switch from multi-thread/multi-process/torch-process.
 - [CV multi video thread](./cv_gears#CV-Multi-Video-Thread) , give multical video path to get a multi frame thread.
 
 
-### shell scripts
+### ~~shell scripts~~
 
 - batch uncompress script support different types(zip tar 7z etc.)
 

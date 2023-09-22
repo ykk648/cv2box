@@ -46,6 +46,15 @@ class ImageBasic:
             self.cv_image = cv2.imdecode(np.frombuffer(io.BytesIO(image_in).read(), np.uint8), 1)
         elif 'buffer' in image_format:
             self.cv_image = np.frombuffer(image_in, np.uint8).reshape(image_size)
+        elif 'gif' in image_format:
+            Image = try_import('PIL.Image', 'cv_math: need pillow here.')
+            with Image.open(image_in) as im:
+                # 获取 GIF 中的每一帧
+                frames = []
+                for frame in range(im.n_frames):
+                    im.seek(frame)
+                    frames.append(im.copy())
+            self.cv_image = frames
         else:
             raise 'Can not find image_format ！'
 
@@ -126,6 +135,15 @@ class ImageBasic:
     def save(self, img_save_p, compress=False, create_path=False):
         if create_path:
             os.makedirs(str(Path(img_save_p).parent), exist_ok=True)
+
+        if isinstance(self.cv_image, list):
+            # gif to images
+            for i, frame in enumerate(self.cv_image):
+                save_path = f"{img_save_p}/{i + 1}.png"
+                frame.save(save_path, "PNG")
+                print(f"Saved frame {i + 1} as {save_path}")
+            return
+
         if not compress:
             cv2.imwrite(img_save_p, self.cv_image)
         else:
@@ -356,7 +374,7 @@ class CVImage(ImageBasic):
             img_fg: 0-1
             img_bg:
             mat_rev:
-            img_fg_mask: 0-1 (h,w,1)
+            img_fg_mask: 0-1 (h,w,1) , None means use common mask(only for ROI image
         Returns:
         """
         ne = try_import('numexpr', 'cv_image: this func need numexpr')
