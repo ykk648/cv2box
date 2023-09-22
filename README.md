@@ -27,6 +27,7 @@ A gather of tools or funcs frequently using in my work.
 Now including these functions:
 
 ### cv ops
+- [CVAudio](./cv_ops#cvaudio) , audio preprocessing.
 - [CVBbox](./cv_ops#cvbox) , different bbox filter.
 - [CVCamera](./cv_ops#cvcamera) , load [multical](https://github.com/makerdao/multicall) calibrate result and give any format of camera matrix.
 - [CVExcel](./cv_ops#cvexcel) , basic ops for insert data to excel file.
@@ -53,8 +54,9 @@ Now supports mode switch from multi-thread/multi-process/torch-process.
 
 ### utils
 
-- fps counter
-- apscheduler
+- fps counter- [CVEncrypt](./utils/encrypt#cvencrypt), encrypt file/model with AES..
+- [scheduler](./utils#scheduler) , scheduler wrote by apscheduler.
+- [send notify](./utils#sendnotify) , send notify to BARK/DINGDING/WX/TG etc..
 - math (cal distances
 
 ### AI power (moved to [AI_power](https://github.com/ykk648/AI_power))

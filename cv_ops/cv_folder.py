@@ -19,6 +19,19 @@ class CVFolder:
         if save_path is not None:
             os.makedirs(self.save_path, exist_ok=True)
 
+    def clear(self):
+        # 遍历文件夹内的所有文件和文件夹
+        for file_name in os.listdir(self.root_path):
+            file_path = os.path.join(self.root_path, file_name)
+            # 判断是否为文件
+            if os.path.isfile(file_path):
+                # 删除文件
+                os.remove(file_path)
+            # 判断是否为文件夹
+            elif os.path.isdir(file_path):
+                # 递归调用清空文件夹函数
+                shutil.rmtree(file_path)
+
     def find_duplicates(self):
         # import imagededup
         # from imagededup.methods import PHash

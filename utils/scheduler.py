@@ -36,16 +36,3 @@ def scheduler_trigger(my_job, trigger):
 
     scheduler.add_job(my_job, trigger=trigger)
     scheduler.start()
-
-
-if __name__ == '__main__':
-    def qq_fun():
-        import time
-        print(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())))
-        print('test')
-
-
-    from apscheduler.triggers.cron import CronTrigger
-
-    trigger = CronTrigger(day_of_week='mon-fri', hour='14', minute='40')
-    scheduler_trigger(qq_fun, trigger)

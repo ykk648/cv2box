@@ -1,3 +1,20 @@
+### CVAudio
+
+Audio preprocessing.
+
+#### example
+
+```python
+from cv2box.cv_ops.cv_audio import CVAudio
+audio_p = ''
+ca = CVAudio(audio_p, sr=16000)
+print(ca.data.shape)
+mel = ca.mel_spectrogram(True, 25)
+print(mel.shape)
+individual_mel = ca.individual_mel_spec(mel)
+print(individual_mel.shape)
+```
+
 ### CVImage
 
 Human-like API to unite different image format, convenient way to convert/show/save one pic or even pic path.
@@ -150,6 +167,7 @@ filter bboxes by center/area/center+area condition.
 ```python
 from cv2box import CVBbox
 boxes = [[],[]]
+print(CVBbox(boxes).area())
 boxes_result = CVBbox(boxes).area_center_filter(frame.shape, max_num=1)
 ```
 
