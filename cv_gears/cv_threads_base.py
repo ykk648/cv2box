@@ -30,6 +30,7 @@ class Factory(Process):
         self.block = block
         self.pid_number = os.getpid()
         self.exit_signal = False
+        self._stop_event = Event()
 
         # add init here
         print('Init {} {}, pid is {}.'.format('Factory', self.class_name(), self.pid_number))
@@ -44,6 +45,9 @@ class Factory(Process):
         something_out = 0
         return something_out
 
+    def stop(self):
+        self._stop_event.set()
+
     def exit_func(self):
         """
         Do your factory exit condition here.
@@ -57,7 +61,7 @@ class Factory(Process):
         queue_full_counter = 0
         start_time = time.time()
 
-        while True:
+        while not self._stop_event.is_set():
 
             # exit condition
             self.exit_func()
@@ -102,6 +106,7 @@ class Linker(Process):
         self.block = block
         self.pid_number = os.getpid()
         self.exit_signal = False
+        self._stop_event = Event()
 
         # add init here
         print('init {} {}, pid is {}.'.format('Linker', self.class_name(), self.pid_number))
@@ -115,6 +120,9 @@ class Linker(Process):
         # do your work here.
         something_out = something_in
         return something_out
+
+    def stop(self):
+        self._stop_event.set()
 
     def exit_func(self):
         """
@@ -131,7 +139,7 @@ class Linker(Process):
         queue_full_counter = 0
         start_time = 0
 
-        while True:
+        while not self._stop_event.is_set():
             something_in = self.queue_list[0].get()
             if self.fps_counter:
                 start_time = time.time()
@@ -178,6 +186,7 @@ class Consumer(Process):
         self.block = block
         self.pid_number = os.getpid()
         self.exit_signal = False
+        self._stop_event = Event()
 
         # add init here
         print('init {} {}, pid is {}.'.format('Consumer', self.class_name(), self.pid_number))
@@ -190,6 +199,9 @@ class Consumer(Process):
         # do your work here.
         something_out = something_in
         return something_out
+
+    def stop(self):
+        self._stop_event.set()
 
     def exit_func(self):
         """
@@ -204,7 +216,7 @@ class Consumer(Process):
         time_sum = 0
         start_time = 0
 
-        while True:
+        while not self._stop_event.is_set():
             something_in = self.queue_list[0].get()
             if self.fps_counter:
                 start_time = time.time()

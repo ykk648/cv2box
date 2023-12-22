@@ -12,6 +12,7 @@ from .logging import cv_print
 import platform
 import cv2
 from io import StringIO
+from subprocess import call, Popen
 
 
 def mat2mask(frame, mat):
@@ -81,13 +82,20 @@ def safe_cv_pyqt5():
         os.environ.pop("QT_QPA_FONTDIR")
 
 
-def os_call(command, silent=False):
-    if silent:
-        os.system(command + ' >/dev/null 2>&1')
+# https://docs.python.org/3.11/library/subprocess.html#replacing-os-system
+def os_call(command, silent=False, asyncio=False):
+    if not asyncio:
+        if silent:
+            retcode = call(command + ' >/dev/null 2>&1', shell=True)
+        else:
+            print(command)
+            retcode = call(command, shell=True)
+            if retcode < 0:
+                print("Child was terminated by signal", -retcode, file=sys.stderr)
+            else:
+                print("Child returned", retcode, file=sys.stderr)
     else:
-        print(command)
-        os.system(command)
-
+        Popen(command, shell=True)
 
 def make_random_name(suffix_or_name=None):
     if '.' in suffix_or_name:
