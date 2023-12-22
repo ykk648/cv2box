@@ -116,7 +116,7 @@ class ImageBasic:
                 # cv2 resize function always returns a new Mat object.
                 self.cv_image = cv2.resize(self.cv_image, size, interpolation=interpolation)
         elif type(size) == int:
-            if size != self.cv_image.shape[0]:
+            if size != self.cv_image.shape[0] or size != self.cv_image.shape[1]:
                 self.cv_image = cv2.resize(self.cv_image, (size, size), interpolation=interpolation)
         else:
             raise 'Check the size input !'
