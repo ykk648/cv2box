@@ -22,11 +22,12 @@ elif os.environ['CV_MULTI_MODE'] == 'torch-process':
 
 
 class Factory(Process):
-    def __init__(self, queue_list: list, fps_counter=False, block=True):
+    def __init__(self, queue_list: list, fps_counter=False, counter_time=300, block=True):
         super().__init__()
         # assert len(queue_list) == 1
         self.queue_list = queue_list
         self.fps_counter = fps_counter
+        self.counter_time = counter_time
         self.block = block
         self.pid_number = os.getpid()
         self.exit_signal = False
@@ -79,7 +80,7 @@ class Factory(Process):
             if self.fps_counter:
                 counter += 1
                 time_sum += (time.time() - start_time)
-                if counter > 300:
+                if counter > self.counter_time:
                     print("{} FPS: {}".format(self.class_name(), counter / time_sum))
                     counter = 0
                     time_sum = 0
@@ -99,10 +100,11 @@ class Factory(Process):
 
 
 class Linker(Process):
-    def __init__(self, queue_list: list, fps_counter=False, block=True):
+    def __init__(self, queue_list: list, fps_counter=False, counter_time=300, block=True):
         super().__init__()
         self.queue_list = queue_list
         self.fps_counter = fps_counter
+        self.counter_time = counter_time
         self.block = block
         self.pid_number = os.getpid()
         self.exit_signal = False
@@ -159,7 +161,7 @@ class Linker(Process):
             if self.fps_counter:
                 counter += 1
                 time_sum += (time.time() - start_time)
-                if counter > 300:
+                if counter > self.counter_time:
                     print("{} FPS: {}".format(self.class_name(), counter / time_sum))
                     counter = 0
                     time_sum = 0
@@ -179,10 +181,11 @@ class Linker(Process):
 
 
 class Consumer(Process):
-    def __init__(self, queue_list: list, fps_counter=False, block=True):
+    def __init__(self, queue_list: list, fps_counter=False, counter_time=300, block=True):
         super().__init__()
         self.queue_list = queue_list
         self.fps_counter = fps_counter
+        self.counter_time = counter_time
         self.block = block
         self.pid_number = os.getpid()
         self.exit_signal = False
@@ -236,7 +239,7 @@ class Consumer(Process):
             if self.fps_counter:
                 counter += 1
                 time_sum += (time.time() - start_time)
-                if counter > 300:
+                if counter > self.counter_time:
                     print("{} FPS: {}".format(self.class_name(), counter / time_sum))
                     counter = 0
                     time_sum = 0

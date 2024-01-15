@@ -103,6 +103,12 @@ class CVAudio:
         self.fps = None
         if audio_path:
             self.audio = librosa.core.load(self.audio_path, sr=sr, mono=mono)[0]
+            """
+            # audio_all, sr = sf.read(audio_path, dtype='int16')
+            # if len(audio_all.shape) > 1:
+            #     audio_all = 0.5 * (audio_all[:, 0] + audio_all[:, 1])
+            # audio_all = resampy.resample(audio_all, sr, 16000)
+            """
 
     @property
     def data(self):
@@ -153,3 +159,118 @@ class CVAudio:
             indiv_mels.append(m.T)
         indiv_mels = np.asarray(indiv_mels)
         return np.asarray(indiv_mels)
+
+class CVAudioRecThread(Factory):
+    def __init__(self, queue_list: list, input_device_name, samplerate=40000, blocksize=4096, fps_counter=False):
+        super().__init__(queue_list, fps_counter)
+        if input_device_name is not None:
+            self.set_devices(input_device_name)
+        else:
+            print(self.get_devices())
+            print('Input device not set, use default.')
+        self.stream = sd.InputStream(device=sd.default.device[0], channels=1, blocksize=blocksize,
+                                     samplerate=samplerate, dtype="float32")
+        self.stream.start()
+        self.blocksize = blocksize
+
+        self.stream_out = sd.OutputStream(device=sd.default.device[1], channels=1, samplerate=samplerate)
+        self.stream_out.start()
+
+    def exit_func(self):
+        """
+        If something is None, enter exit func, set `pass` if you want deal with exit by yourself.
+        """
+        self.exit_signal = False
+        # self.stream.stop()
+        # self.stream.close()
+
+    def get_devices(self, update: bool = True):
+        """获取设备列表"""
+        if update:
+            sd._terminate()
+            sd._initialize()
+        devices = sd.query_devices()
+        hostapis = sd.query_hostapis()
+        for hostapi in hostapis:
+            for device_idx in hostapi["devices"]:
+                devices[device_idx]["hostapi_name"] = hostapi["name"]
+        input_devices = [
+            f"{d['name']} ({d['hostapi_name']})"
+            for d in devices
+            if d["max_input_channels"] > 0
+        ]
+        input_devices_indices = [
+            d["index"] if "index" in d else d["name"]
+            for d in devices
+            if d["max_input_channels"] > 0
+        ]
+        return (input_devices, input_devices_indices,)
+
+    def set_devices(self, input_device):
+        """设置输出设备"""
+        (
+            input_devices,
+            input_device_indices,
+        ) = self.get_devices()
+        sd.default.device[0] = input_device_indices[
+            input_devices.index(input_device)
+        ]
+
+        print(f"Input device: {str(sd.default.device[0])}:{input_device}")
+
+    def forward_func(self):
+        data = self.stream.read(self.blocksize)
+        self.stream_out.write(data[0].astype(np.float32))
+        # print(data)
+        return [data[0]]
+
+
+class CVAudioPlayThread(Consumer):
+    def __init__(self, queue_list: list[Queue], output_device_name=None, samplerate=40000, fps_counter=False):
+        super().__init__(queue_list, fps_counter)
+        if output_device_name is not None:
+            self.set_devices(output_device_name)
+        else:
+            print(self.get_devices())
+            print('Output device not set, use default.')
+        self.stream = sd.OutputStream(device=sd.default.device[1], channels=1, samplerate=samplerate)
+        self.stream.start()
+
+    def get_devices(self, update: bool = True):
+        """获取设备列表"""
+        if update:
+            sd._terminate()
+            sd._initialize()
+        devices = sd.query_devices()
+        hostapis = sd.query_hostapis()
+        for hostapi in hostapis:
+            for device_idx in hostapi["devices"]:
+                devices[device_idx]["hostapi_name"] = hostapi["name"]
+        output_devices = [f"{d['name']} ({d['hostapi_name']})" for d in devices if d["max_output_channels"] > 0]
+        output_devices_indices = [d["index"] if "index" in d else d["name"] for d in devices if
+                                  d["max_output_channels"] > 0]
+        return (output_devices, output_devices_indices)
+
+    def set_devices(self, output_device):
+        """设置输出设备"""
+        (
+            output_devices,
+            output_device_indices,
+        ) = self.get_devices()
+        sd.default.device[1] = output_device_indices[
+            output_devices.index(output_device)
+        ]
+        print(f"Output device: {str(sd.default.device[1])}:{output_device}")
+
+    def exit_func(self):
+        """
+        If something is None, enter exit func, set `pass` if you want deal with exit by yourself.
+        """
+        print('{} {} exit !'.format(self.class_name(), self.pid_number))
+        self.exit_signal = True
+        self.stream.stop()
+        self.stream.close()
+
+    def forward_func(self, something_in):
+        output_audio = something_in[0]
+        self.stream.write(output_audio.astype(np.float32))
