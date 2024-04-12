@@ -8,6 +8,7 @@ import os
 from tqdm.contrib.logging import logging_redirect_tqdm
 
 CV_LOG_LEVEL = os.environ['CV_LOG_LEVEL']
+LOGGER_NAME = 'cv2box'
 
 LEVEL_DICT = {
     'debug': 10,
@@ -19,7 +20,7 @@ LEVEL_DICT = {
 
 
 def cv_print(message, *args, level='info'):
-    logger = logging.getLogger('cv2box')
+    logger = logging.getLogger(LOGGER_NAME)
     with logging_redirect_tqdm(loggers=[logger]):
         if level == 'debug':
             logger.debug(message, *args)
@@ -34,30 +35,29 @@ def cv_print(message, *args, level='info'):
 
 
 def set_log_level(level='info'):
-    logger = logging.getLogger('cv2box')
+    logger = logging.getLogger(LOGGER_NAME)
     logger.setLevel(LEVEL_DICT[level])
 
 
 def judge_log_level(level='info'):
-    logger = logging.getLogger('cv2box')
+    logger = logging.getLogger(LOGGER_NAME)
     level_now = logger.getEffectiveLevel()
     return level_now == LEVEL_DICT[level]
 
 
 def cv_logging_init():
-    logger = logging.getLogger('cv2box')
-    logger.setLevel(logging.DEBUG)
+    logger = logging.getLogger(LOGGER_NAME)
+    logger.setLevel(LEVEL_DICT[CV_LOG_LEVEL])
+    logger.propagate = False
 
     # create console handler and set level to debug
     ch = logging.StreamHandler()
-
     ch.setLevel(LEVEL_DICT[CV_LOG_LEVEL])
-
     # create formatter
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-
     # add formatter to ch
     ch.setFormatter(formatter)
-
     # add ch to logger
     logger.addHandler(ch)
+
+    return logger

@@ -95,7 +95,7 @@ class CVFile:
                 if isinstance(v, np.bool_):
                     data_in[k] = bool(v)
         with open(self.file_path, 'w', encoding='utf-8', ) as f:
-            json.dump(data_in, f, ensure_ascii=False)
+            json.dump(data_in, f, ensure_ascii=False, indent=4)
 
     def json_update(self, data_in):
         with open(self.file_path, 'rb') as f:
@@ -121,6 +121,11 @@ class CVFile:
     def pd_write(self, data_in, index=True):
         os.makedirs(str(Path(self.file_path).parent), exist_ok=True)
         data_in.to_csv(self.file_path, index=index)
+
+    def txt_write(self, data_in):
+        os.makedirs(str(Path(self.file_path).parent), exist_ok=True)
+        with open(self.file_path, 'w') as file:
+            file.write('\n'.join(data_in))
 
     def yaml_dump(self, data_in):
         assert type(data_in) is dict

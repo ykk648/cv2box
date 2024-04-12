@@ -1,3 +1,7 @@
+# -- coding: utf-8 --
+# @LastEdit : 2024/4/12
+# @Author : ykk648
+
 import os
 import uuid
 import pickle
@@ -40,6 +44,7 @@ def mat2mask(frame, mat):
     img_mask = np.reshape(img_mask, [img_mask.shape[0], img_mask.shape[1], 1]).astype(np.float32)
     return img_mask
 
+
 def common_face_mask(mask_shape):
     mask = np.zeros((512, 512)).astype(np.float32)
     # cv2.circle(mask, (285, 285), 110, (255, 255, 255), -1)  # -1 表示实心
@@ -57,6 +62,7 @@ def common_face_mask(mask_shape):
     mask = mask / 255.
     mask = cv2.resize(mask, mask_shape)
     return mask[..., np.newaxis]
+
 
 def system_judge():
     """
@@ -95,7 +101,9 @@ def os_call(command, silent=False, asyncio=False):
             else:
                 print("Child returned", retcode, file=sys.stderr)
     else:
+        print(command)
         Popen(command, shell=True)
+
 
 def make_random_name(suffix_or_name=None):
     if '.' in suffix_or_name:
@@ -117,12 +125,14 @@ class MyTimer(object):
     """
     timer
     """
+    def __init__(self, show_name='test'):
+        self.show_name = show_name
 
     def __enter__(self):
         self.t0 = time.time()
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        print('[finished, spent time: {time:.2f}s]'.format(time=time.time() - self.t0))
+        print(f'[RUN {self.show_name} finished, spent time: {"{:.2f}".format(time.time() - self.t0)}s]')
 
 
 class MyFpsCounter(object, ):
@@ -142,7 +152,6 @@ def mfc(flag='Your Func Name'):
     :param flag:
     :return:
     """
-
     def decorator(f):
         def wrapper(*args, **kwargs):
             t0 = time.time()
@@ -156,14 +165,14 @@ def mfc(flag='Your Func Name'):
     return decorator
 
 
-def get_path_by_ext(this_dir, ext_list=None, sorted_by_stem=False):
+def get_path_by_ext(this_dir: str, ext_list: list = None, sorted_by_stem: bool = False, patten: str = '*'):
     if ext_list is None:
         print('Use image ext as default !')
         ext_list = [".jpg", ".png", ".JPG", ".webp", ".jpeg", ".tiff"]
     if sorted_by_stem:
-        return sorted([p for p in Path(this_dir).rglob('*') if p.suffix in ext_list], key=lambda x: int(x.stem))
+        return sorted([p for p in Path(this_dir).rglob(patten) if p.suffix in ext_list], key=lambda x: int(x.stem))
     else:
-        return [p for p in Path(this_dir).rglob('*') if p.suffix in ext_list]
+        return [p for p in Path(this_dir).rglob(patten) if p.suffix in ext_list]
 
 
 def try_import(module_name, warn_message=None):

@@ -313,8 +313,9 @@ class CVVideo:
         return video_out_p
 
     def extract_audio(self, output_path=None):
+        video_suffix = Path(self.video_path).suffix
         if not output_path:
-            output_path = self.video_path.replace('.mp4', '_audio.wav')
+            output_path = self.video_path.replace(video_suffix, '_audio.wav')
         os_call(f'ffmpeg -i {self.video_path} -vn -acodec pcm_s16le -ar 44100 -ac 2 {output_path}')
 
     def copy_audio(self, audio_src):

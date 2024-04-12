@@ -76,15 +76,16 @@ class CVEncrypt:
                 fo.write(encryptTest)
         else:
             print('AES 加解密失败，解密数据与元数据不相等')
+        return pad_len
 
-    def load_encrypt_file(self, model_path):
+    def load_encrypt_file(self, model_path, pad_len=None):
         """
         file name: xxx_{pad_len}.bin
         :param model_path:
         :return:
         """
+        assert pad_len is not None
         with open(model_path, 'rb') as f_:
             bytes_aes = f_.read()
         bytes = DeCrypt(PadKey(self.key.encode()), bytes_aes)
-        pad_len = int(model_path.split('_')[-1].split('.')[0])
         return bytes[:-pad_len]
