@@ -80,6 +80,7 @@ class Factory(Process):
             if self.fps_counter:
                 counter += 1
                 time_sum += (time.time() - start_time)
+                time_sum = max(time_sum, 0.001)
                 if counter > self.counter_time:
                     print("{} FPS: {}".format(self.class_name(), counter / time_sum))
                     counter = 0
@@ -97,6 +98,8 @@ class Factory(Process):
                         print('{} {} Queue full {} times'.format('Factory', self.class_name(), queue_full_counter))
             if self.fps_counter:
                 start_time = time.time()
+
+        print('stop_event set, {} {} exit !'.format(self.class_name(), self.pid_number))
 
 
 class Linker(Process):
@@ -161,6 +164,7 @@ class Linker(Process):
             if self.fps_counter:
                 counter += 1
                 time_sum += (time.time() - start_time)
+                time_sum = max(time_sum, 0.001)
                 if counter > self.counter_time:
                     print("{} FPS: {}".format(self.class_name(), counter / time_sum))
                     counter = 0
@@ -178,6 +182,7 @@ class Linker(Process):
                         if (time.time() - start_time) > 10:
                             print('{} {} Queue full {} times'.format('Linker', self.class_name(),
                                                                      queue_full_counter))
+        print('stop_event set, {} {} exit !'.format(self.class_name(), self.pid_number))
 
 
 class Consumer(Process):
@@ -239,7 +244,9 @@ class Consumer(Process):
             if self.fps_counter:
                 counter += 1
                 time_sum += (time.time() - start_time)
+                time_sum = max(time_sum, 0.001)
                 if counter > self.counter_time:
                     print("{} FPS: {}".format(self.class_name(), counter / time_sum))
                     counter = 0
                     time_sum = 0
+        print('stop_event set, {} {} exit !'.format(self.class_name(), self.pid_number))

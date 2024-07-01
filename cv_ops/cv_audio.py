@@ -7,12 +7,18 @@ ref https://github.com/OpenTalker/SadTalker/blob/main/src/utils/audio.py
 """
 from ..utils import try_import
 from ..utils.audio.hparams import hparams as hp
+from ..cv_gears.cv_threads_base import Consumer, Factory, Queue
 import numpy as np
-from scipy import signal
-from tqdm import tqdm
+# from scipy import signal
+# from tqdm import tqdm
 
 librosa = try_import('librosa', 'cv_audio: need librosa')
+sd = try_import('sounddevice', 'cv_audio: need sounddevice')
 
+
+class CVAudio():
+    def __init__(self, audio_p, sr=16000):
+        self.audio_p = audio_p
 
 def _amp_to_db(x):
     min_level = np.exp(hp.min_level_db / 20 * np.log(10))

@@ -10,7 +10,7 @@ except KeyError:
            'multi-process/torch-process')
 
 
-from .cv_video_thread import CVVideoThread, CVVideoWriterThread, CVCamThread
+from .cv_video_thread import CVVideoThread, CVVideoWriterThread, CVCamThread, CVVideoLoader
 from .cv_multi_video_thread import CVMultiVideoThread
 from .cv_threads_base import Factory, Linker, Consumer, Queue, Manager, Process, Event
 # from .keyboard_listener_thread import KeyboardListener

@@ -130,3 +130,10 @@ dmypy.json
 
 # PyCharm
 .idea/
+
+# my ignore
+pretrain_models/
+deprecated/
+preprocess/
+**/.DS_Store
+**/._.DS_Store
