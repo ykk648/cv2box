@@ -8,7 +8,7 @@ import logging
 import cv2
 import shutil
 from tqdm import tqdm
-from ..utils import os_call
+from ..utils import os_call, try_import
 import numpy as np
 from pathlib import Path
 
@@ -18,8 +18,9 @@ def decode_fourcc(cc):
 
 
 class CVVideo:
-    def __init__(self, video_p, verbose=True):
+    def __init__(self, video_p, verbose=True, ffmpeg_path='ffmpeg'):
         self.video_path = video_p
+        self.ffmpeg_path = ffmpeg_path
         assert Path(self.video_path).exists()
         self.video_dir, self.video_name = os.path.split(self.video_path)
         self.prefix, self.suffix = os.path.splitext(self.video_name)
@@ -27,7 +28,6 @@ class CVVideo:
             self.print_video_info()
 
     def print_video_info(self):
-
         # 获得视频的格式
         cap = cv2.VideoCapture(self.video_path)
         fourcc = cap.get(cv2.CAP_PROP_FOURCC)
@@ -36,13 +36,9 @@ class CVVideo:
         frame_number = cap.get(cv2.CAP_PROP_FRAME_COUNT)  # 视频文件的帧数
         duration = frame_number / fps  # 帧速率/视频总帧数 是s
 
-        size = (int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)),
-                int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)))
+        size = (int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)), int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)))
         cap.release()
-        print(
-            'video info:\nname: {}\nfourcc: {}\nframe_number: {}\nfps: {}\nsize: {}'.format(self.video_name,
-                                                                                            decode_fourcc(fourcc),
-                                                                                            frame_number, fps, size))
+        print(f'video info:\nname: {self.video_name}\nfourcc: {decode_fourcc(fourcc)}\nframe_number: {frame_number}\nfps: {fps}\nduration: {duration}\nsize: {size}')
 
     def show_video_cv(self, delay=100):
         cap = cv2.VideoCapture(self.video_path)
@@ -58,6 +54,8 @@ class CVVideo:
         cv2.destroyAllWindows()
 
     def video_2_h264(self, inplace=True):
+        # ffmpeg -i input.mp4 -c:v libx264 -tag:v avc1 -movflags faststart -crf 30 -preset superfast output.mp4
+        # https://tools.rotato.app/compress
         if not inplace:
             os_call('ffmpeg -i {} -vcodec h264 {}'.format(self.video_path,
                                                           self.video_path.replace(self.suffix, '_h264_out.mp4')))
@@ -113,10 +111,10 @@ class CVVideo:
                         last_time) is not None, 'The time format: start:00:00:15 last_time:00:00:15 etc.'
         cut_out_video_path = self.video_dir + '/' + self.prefix + '_cut_out.mp4'
         if not accurate:
-            command = 'ffmpeg -y -ss {} -t {} -i {} -codec copy {}'.format(start, last_time, self.video_path,
+            command = 'ffmpeg -y -ss {} -t {} -i "{}" -codec copy "{}"'.format(start, last_time, self.video_path,
                                                                            cut_out_video_path)
         else:
-            command = 'ffmpeg -y -ss {} -t {} -i {} {}'.format(start, last_time, self.video_path, cut_out_video_path)
+            command = 'ffmpeg -y -ss {} -t {} -i "{}" "{}"'.format(start, last_time, self.video_path, cut_out_video_path)
         os_call(command)
         return cut_out_video_path
 
@@ -312,11 +310,16 @@ class CVVideo:
 
         return video_out_p
 
-    def extract_audio(self, output_path=None):
+    def extract_audio(self, output_path=None, quiet=False, bitrate=44100):
         video_suffix = Path(self.video_path).suffix
         if not output_path:
             output_path = self.video_path.replace(video_suffix, '_audio.wav')
-        os_call(f'ffmpeg -i {self.video_path} -vn -acodec pcm_s16le -ar 44100 -ac 2 {output_path}')
+        if quiet:
+            ffmpeg_params = '-loglevel error'
+        else:
+            ffmpeg_params = '-loglevel info'
+        ffmpeg_log = os_call(f'{self.ffmpeg_path} -y -i {self.video_path} -vn -acodec pcm_s16le -ar {bitrate} -ac 1 {ffmpeg_params} {output_path}')
+        return ffmpeg_log
 
     def copy_audio(self, audio_src):
         """
@@ -350,25 +353,21 @@ class CVVideoLoader(object, ):
     def __enter__(self):
         self.cap = cv2.VideoCapture(self.video_p)
         self.fps = self.cap.get(cv2.CAP_PROP_FPS)
-        self.size = (int(self.cap.get(cv2.CAP_PROP_FRAME_WIDTH)),
-                     int(self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT)))
-        self.frames_num = self.cap.get(7)
+        self.size = (int(self.cap.get(cv2.CAP_PROP_FRAME_WIDTH)), int(self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT)))
+        self.frames_num = self.cap.get(cv2.CAP_PROP_FRAME_COUNT)
         codec = int(self.cap.get(cv2.CAP_PROP_FOURCC))
-        self.codec = chr(codec & 0xFF) + chr((codec >> 8) & 0xFF) + chr((codec >> 16) & 0xFF) + chr(
-            (codec >> 24) & 0xFF)
+        self.codec = chr(codec & 0xFF) + chr((codec >> 8) & 0xFF) + chr((codec >> 16) & 0xFF) + chr((codec >> 24) & 0xFF)
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.cap.release()
 
     def __len__(self):
-        return int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        return int(self.frames_num)
 
     def get(self):
         """
-
         Returns: success, frame
-
         """
         return self.cap.read()
 
@@ -382,11 +381,7 @@ class CVVideoLoaderFF(object, ):
         self.video_p = video_p
 
     def __enter__(self):
-        try:
-            from deffcode import FFdecoder
-        except Exception as e:
-            logger = logging.getLogger('cv2box')
-            logger.error('got exception: {}, {}'.format(e, 'cv_video: pip install deffcode'))
+        FFdecoder = try_import('deffcode.FFdecoder')
 
         self.decoder = FFdecoder(self.video_p).formulate()
         self.fps = self.decoder.metadata["source_video_framerate"]

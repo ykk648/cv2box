@@ -11,12 +11,14 @@ from pathlib import Path
 from importlib import import_module
 import warnings
 import sys
+from unittest import result
+
 import numpy as np
 from .logging import cv_print
 import platform
 import cv2
 from io import StringIO
-from subprocess import call, Popen
+import subprocess
 
 
 def mat2mask(frame, mat):
@@ -90,19 +92,25 @@ def safe_cv_pyqt5():
 
 # https://docs.python.org/3.11/library/subprocess.html#replacing-os-system
 def os_call(command, silent=False, asyncio=False):
-    if not asyncio:
+    if not silent:
+        print(command)
+        
+    if asyncio:
+        subprocess.Popen(command, shell=True)
+    else:
         if silent:
-            retcode = call(command + ' >/dev/null 2>&1', shell=True)
-        else:
-            print(command)
-            retcode = call(command, shell=True)
+            retcode = subprocess.call(command + ' >/dev/null 2>&1', shell=True)
             if retcode < 0:
                 print("Child was terminated by signal", -retcode, file=sys.stderr)
             else:
                 print("Child returned", retcode, file=sys.stderr)
-    else:
-        print(command)
-        Popen(command, shell=True)
+        else:
+            result = subprocess.Popen(command, shell=True, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+            try:
+                output = result.stderr.read().decode('utf-8')
+            except UnicodeDecodeError as e:
+                output = result.stderr.read().decode('latin-1')
+            return output
 
 
 def make_random_name(suffix_or_name=None):

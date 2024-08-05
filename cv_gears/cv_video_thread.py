@@ -79,6 +79,78 @@ class CVVideoThread(Process):
         print('Video load done, %s exit', self.class_name())
 
 
+class CVVideoCacheThread(CVVideoThread):
+    def __init__(self, video_in_path, queue_list, need_more_frame_num, aim_output_frame_num, block=True, fps_counter=False):
+        """
+        Args:
+            video_in_path:
+            queue_list:
+            need_more_frame_num: more frames needs to be cached while decoding video
+            aim_output_frame_num: final output frame counts
+            block:
+            fps_counter:
+        """
+        super().__init__(video_in_path, queue_list, block=block, fps_counter=fps_counter)
+        self.aim_output_frame_num = aim_output_frame_num
+        self.need_more_frame_num = need_more_frame_num
+        self.frame_caches = []
+
+    def run(self, ):
+        """
+        Returns: BGR [frame]
+        """
+        counter = 0
+        time_sum = 0
+        queue_full_counter = 0
+        start_time = time.time()
+
+        with CVVideoLoader(self.video_path) as cvvl:
+            # ref https://stackoverflow.com/questions/31472155/python-opencv-cv2-cv-cv-cap-prop-frame-count-get-wrong-numbers
+            # cv2.CAP_PROP_FRAME_COUNT returns false count in some videos
+            for i in tqdm(range(len(cvvl) + 15)):
+                success, frame = cvvl.get()
+                if not success:
+                    break
+
+                if self.need_more_frame_num > len(cvvl):
+                    self.frame_caches.append(frame)
+                elif (len(cvvl) - i) < self.need_more_frame_num:
+                    self.frame_caches.append(frame)
+
+                something_out = [frame]
+
+                if self.fps_counter:
+                    counter += 1
+                    time_sum += (time.time() - start_time)
+                    if time_sum > 10:
+                        print("%s FPS: %s", self.class_name(), counter / time_sum)
+                        counter = 0
+                        time_sum = 0
+                    start_time = time.time()
+
+                if self.block:
+                    self.queue_list[0].put(something_out)
+                else:
+                    try:
+                        self.queue_list[0].put_nowait(something_out)
+                    except queue.Full:
+                        # do your judge here, for example
+                        queue_full_counter += 1
+                        if (time.time() - start_time) > 10:
+                            print('%s Queue full %s times', self.class_name(), queue_full_counter)
+
+        circle_num = 0
+        self.frame_caches = self.frame_caches[::-1]
+        for j in tqdm(range(self.aim_output_frame_num - i)):
+            if j // len(self.frame_caches) != circle_num:
+                circle_num += 1
+                self.frame_caches = self.frame_caches[::-1]
+            self.queue_list[0].put([self.frame_caches[j % len(self.frame_caches)]])
+
+        self.queue_list[0].put(None)
+        print('Video load done, %s exit', self.class_name())
+
+
 class CVCamThread(Process):
 
     def __init__(self, video_in_path, queue_list: list, block=True, fps_counter=False):
@@ -132,7 +204,6 @@ class CVCamThread(Process):
                     queue_full_counter += 1
                     if (time.time() - start_time) > 10:
                         print('%s Queue full %s times', self.class_name(), queue_full_counter)
-
 
 
 class CVVideoWriterThread(Process):

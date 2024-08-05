@@ -55,7 +55,7 @@ class CVFolder:
             aim_p = os.path.join(self.root_path, f.replace(prefix1, prefix2))
             os.rename(f_p, aim_p)
 
-    def extract_imgs_from_folder(self, img_num=0, patten=None, random_flag=True, paste=False):
+    def extract_imgs_from_folder(self, img_num=0, patten=None, random_flag=True, copy=False):
         if patten is None:
             patten = '*.png'  # jpg png
         count = 0
@@ -72,14 +72,14 @@ class CVFolder:
                 aim_p = os.path.join(self.save_path, ff)
                 if os.path.exists(aim_p):
                     aim_p = os.path.join(self.save_path, make_random_name(ff))
-                if paste:
+                if not copy:
                     shutil.move(f_p, aim_p)
                 else:
                     shutil.copy(f_p, aim_p)
                 count += 1
                 if count % 1000 == 0:
-                    if paste:
-                        print('paste {} imgs from {} to {}'.format(count, self.root_path, self.save_path))
+                    if not copy:
+                        print('move {} imgs from {} to {}'.format(count, self.root_path, self.save_path))
                     else:
                         print('copy {} imgs from {} to {}'.format(count, self.root_path, self.save_path))
                 if count == img_num:
