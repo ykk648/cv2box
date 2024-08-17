@@ -4,6 +4,7 @@
 # @Project : https://github.com/ykk648/cv2box
 import os
 import re
+import json
 import logging
 import cv2
 import shutil
@@ -112,7 +113,7 @@ class CVVideo:
         cut_out_video_path = self.video_dir + '/' + self.prefix + '_cut_out.mp4'
         if not accurate:
             command = 'ffmpeg -y -ss {} -t {} -i "{}" -codec copy "{}"'.format(start, last_time, self.video_path,
-                                                                           cut_out_video_path)
+                                                                               cut_out_video_path)
         else:
             command = 'ffmpeg -y -ss {} -t {} -i "{}" "{}"'.format(start, last_time, self.video_path, cut_out_video_path)
         os_call(command)
@@ -372,34 +373,155 @@ class CVVideoLoader(object, ):
         return self.cap.read()
 
 
-class CVVideoLoaderFF(object, ):
+class CVVideoLoaderVidgear(object, ):
     """
-    based on https://github.com/abhiTronix/deffcode, hope faster
+    based on Vidgear https://github.com/abhiTronix/vidgear
+    internal queue to save opencv frame, similar as CVVideoThread
     """
 
     def __init__(self, video_p):
         self.video_p = video_p
 
     def __enter__(self):
-        FFdecoder = try_import('deffcode.FFdecoder')
+        vidgear = try_import('vidgear')
+        from vidgear.gears import VideoGear
+        self.stream = VideoGear(source=self.video_p).start()
+        self.fps = self.stream.framerate
+        self.size = (int(self.stream.stream.frame.shape[1]), int(self.stream.stream.frame.shape[0]))
+        return self
 
-        self.decoder = FFdecoder(self.video_p).formulate()
-        self.fps = self.decoder.metadata["source_video_framerate"]
-        self.size = self.decoder.metadata["source_video_resolution"]
-        self.frames_num = self.decoder.metadata["approx_video_nframes"]
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.stream.stop()
+
+    def __len__(self):
+        return int(self.frames_num)
+
+    def get(self):
+        """
+        Returns: success, frame
+        """
+        return self.stream.read()
+
+
+class CVVideoLoaderFF(object, ):
+    """
+    pip install deffcode
+    based on https://github.com/abhiTronix/deffcode, hope faster
+    default ffmpeg 6.1.1 ref https://abhitronix.github.io/deffcode/latest/installation/ffmpeg_install/#a-auto-installation
+    """
+
+    def __init__(self, video_p, custom_ffmpeg=None):
+        self.video_p = video_p
+        self.custom_ffmpeg = custom_ffmpeg
+
+    def __enter__(self):
+        deffcode = try_import('deffcode')
+
+        self.decoder = deffcode.FFdecoder(self.video_p, frame_format="bgr24", custom_ffmpeg=self.custom_ffmpeg).formulate()
+        self.metadata = json.loads(self.decoder.metadata)
+        self.fps = self.metadata["source_video_framerate"]
+        self.size = self.metadata["source_video_resolution"]
+        self.frames_num = self.metadata["approx_video_nframes"]
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.decoder.terminate()
 
     def __len__(self):
-        return int(self.decoder.metadata["approx_video_nframes"])
+        return int(self.frames_num)
 
     def get(self):
         """
         Returns: success, frame
         """
-        return self.decoder.generateFrame()
+        return None, next(self.decoder.generateFrame())
+
+
+class CVVideoLoaderFFHWACCL(object, ):
+    """
+    pip install deffcode
+    based on https://github.com/abhiTronix/deffcode, hope faster
+    default ffmpeg 6.1.1 ref https://abhitronix.github.io/deffcode/latest/installation/ffmpeg_install/#a-auto-installation
+    ref https://abhitronix.github.io/deffcode/latest/recipes/advanced/transcode-hw-acceleration/
+    """
+
+    def __init__(self, video_p, custom_ffmpeg=None):
+        self.video_p = video_p
+        self.custom_ffmpeg = custom_ffmpeg
+
+        self.ffparams = {
+            "-vcodec": None,  # skip source decoder and let FFmpeg chose
+            "-enforce_cv_patch": True,  # enable OpenCV patch for YUV(NV12) frames
+            "-ffprefixes": [
+                "-vsync",
+                "0",  # prevent duplicate frames
+                "-hwaccel",
+                "cuda",  # accelerator
+                "-hwaccel_output_format",
+                "cuda",  # output accelerator
+            ],
+            "-custom_resolution": "null",  # discard source `-custom_resolution`
+            "-framerate": "null",  # discard source `-framerate`
+            "-vf": "scale_cuda=640:360,"  # scale to 640x360 in GPU memory
+                   + "crop=80:60:200:100,"  # crop a 80×60 section from position (200, 100) in GPU memory
+                   + "hwdownload,"  # download hardware frames to system memory
+                   + "format=nv12",  # convert downloaded frames to NV12 pixel format
+        }
+
+    def __enter__(self):
+        deffcode = try_import('deffcode')
+
+        self.decoder = deffcode.FFdecoder(self.video_p, frame_format="null", verbose=False, custom_ffmpeg=self.custom_ffmpeg, **self.ffparams).formulate()
+        self.metadata = json.loads(self.decoder.metadata)
+        self.fps = self.metadata["source_video_framerate"]
+        self.size = self.metadata["source_video_resolution"]
+        self.frames_num = self.metadata["approx_video_nframes"]
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.decoder.terminate()
+
+    def __len__(self):
+        return int(self.frames_num)
+
+    def get(self):
+        """
+        Returns: success, frame
+        """
+        return None, cv2.cvtColor(next(self.decoder.generateFrame()), cv2.COLOR_YUV2BGR_NV12)
+
+
+class CVVideoLoaderAV(object, ):
+    """
+    pip install av
+    based on https://github.com/PyAV-Org/PyAV, without hwaccel support, pure cpu, lost frames
+    """
+
+    def __init__(self, video_p):
+        self.video_p = video_p
+
+    def __enter__(self):
+        av = try_import('av')
+
+        self.container = av.open(self.video_p)
+        self.video_stream = self.container.streams.video[0]
+        self.video_stream.thread_type = "AUTO"  # FRAME AUTO
+        self.fps = self.video_stream.base_rate  # 帧率
+        self.size = (self.video_stream.height, self.video_stream.width)
+        self.frames_num = self.video_stream.frames  # 视频总帧数
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        pass
+
+    def __len__(self):
+        return int(self.frames_num)
+
+    def get(self):
+        """
+        Returns: frame
+        """
+        return None, next(self.container.decode(self.video_stream)).to_ndarray(format='bgr24')
 
 
 class CVVideoMaker(object, ):
