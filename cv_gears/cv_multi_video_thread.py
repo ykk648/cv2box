@@ -116,9 +116,8 @@ class ReconnectingCamGear:
 
 
 class CVMultiVideoThread(Process):
-
     def __init__(self, video_in_path_list, queue_list: list, multi_stream_offset=True, silent=False, block=True,
-                 fps=None, fps_counter=False, process_name='CVMultiVideoThread'):
+                 fps=None, fps_counter=False):
         super().__init__()
         assert len(queue_list) == 1
         assert len(video_in_path_list) == 4
@@ -131,11 +130,10 @@ class CVMultiVideoThread(Process):
         self.silent = silent
         self.fps_counter = fps_counter
         self.block = block
-        self.process_name = process_name
         self.pid_number = os.getpid()
         self.fps = fps
         if not self.silent:
-            print('init {} {}, pid is {}.'.format(self.process_name, self.__class__.__name__, self.pid_number))
+            print(f'init CVMultiVideoThread {self.__class__.__name__}, pid is {self.pid_number}.')
 
     def run(self, ):
 

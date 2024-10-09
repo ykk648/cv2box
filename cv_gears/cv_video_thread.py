@@ -1,5 +1,6 @@
 # -- coding: utf-8 --
 # @Time : 2022/6/28
+# @LastEdit : 2024/10/9
 # @Author : ykk648
 # @Project : https://github.com/ykk648/cv2box
 from pathlib import Path
@@ -8,6 +9,7 @@ import time
 from tqdm import tqdm
 import queue
 import cv2
+import subprocess
 
 if os.environ['CV_MULTI_MODE'] == 'multi-process':
     from multiprocessing import Process, Queue, Lock
@@ -236,7 +238,13 @@ class CVVideoWriterThread(Process):
                 break
 
             src_img_in = something[0]
-            self.video_writer.write(src_img_in)
+
+            if isinstance(self.video_writer, subprocess.Popen):
+                self.video_writer.stdin.write(src_img_in.tobytes())
+            elif isinstance(self.video_writer, cv2.VideoWriter):
+                self.video_writer.write(src_img_in)
+            else:
+                raise NotImplementedError
 
             if self.fps_counter:
                 counter += 1

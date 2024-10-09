@@ -1,6 +1,6 @@
 ### CV Threads Base
 
-Human-like API , making multi-thread AI program more easy.
+Human-like API , making multi-thread AI program more easier.
 
 Multithread waterfall sequence: Factory -> Linker -> Consumer
 
@@ -8,7 +8,9 @@ If you need circle or tree structure, just add more queue to queue_list.
 
 #### multi-mode switch
 
-Make sure your model is pickable.
+Default mode is multi-thread, which is most economical.
+
+Make sure your model is pickable if you want use torch-process.
 
 ```python
 import os
@@ -67,14 +69,52 @@ Supply thread reading to a video file, addition of VidGear.
 ```python
 from cv2box.cv_gears import CVVideoThread, Queue
 
-q1 = Queue(5)
-c1 = CVVideoThread(video_p, [q1], silent=False)
+frame_q = Queue(5)
+c1 = CVVideoThread(video_p, [frame_q], fps_counter=False)
 c1.start()
+while True:
+    frame = frame_q.get()
+```
+
+### CVVideoCacheThread
+
+WIP
+
+### CVCamThread
+
+WIP
+
+### CV Video Writer Thread
+
+Supply thread writing rgb frame to a video file, support ffmpeg and opencv.
+
+#### example
+
+```python
+from cv2box.cv_gears import CVVideoWriterThread, Queue
+
+frame_q = Queue(5)
+if opencv_flag:
+    video_writer = cv2.VideoWriter(video_out_path, cv2.VideoWriter_fourcc(*'avc1'), video_fps, video_size)
+else:
+    video_info = CVVideo(video).get_video_info_ffmpeg()
+    ffmpeg_command = ["ffmpeg", "-y", "-f", "rawvideo", "-vcodec", "rawvideo", "-s", f"{video_size[0]}x{video_size[1]}", "-pix_fmt", "bgr24", "-r", str(video_fps), "-i", "-", "-an", "-c:v", "h264_nvenc", "-preset", "medium",
+                      "-qp", "10", "-pix_fmt", f"{video_info['pix_fmt']}", "-colorspace", f"{video_info['color_space']}", "-color_primaries", f"{video_info['color_primaries']}", "-color_trc", f"{video_info['color_transfer']}",
+                      "-color_range", "tv", f"{str(video_out_path)}"]
+    video_writer = subprocess.Popen(ffmpeg_command, stdin=subprocess.PIPE)
+c1 = CVVideoWriterThread(video_writer, [frame_q], fps_counter=False)
+c1.start()
+frame_q.put(some_frame)
+c1.join()
+if opencv_flag:
+    video_writer.release()
+else:
+    stdout, stderr = video_writer.communicate()
 ```
 
 ### CV Multi Video Thread
 
-Supply multiple video/stream read synchronous based on vidgear.
+Supply multiple video/stream read synchronous based on vidgear, and will reconnect when stream get fail.
 
 ```python
 from cv2box.cv_gears import CVMultiVideoThread

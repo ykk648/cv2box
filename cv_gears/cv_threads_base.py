@@ -1,5 +1,6 @@
 # -- coding: utf-8 --
 # @Time : 2022/6/28
+# @LastEdit : 2024/10/9
 # @Author : ykk648
 # @Project : https://github.com/ykk648/cv2box
 """
@@ -34,15 +35,16 @@ class Factory(Process):
         self._stop_event = Event()
 
         # add init here
-        print('Init {} {}, pid is {}.'.format('Factory', self.class_name(), self.pid_number))
+        print(f'Init Factory {self.class_name()}, pid is {self.pid_number}.')
 
     @classmethod
     def class_name(cls):
         return cls.__name__
 
     def forward_func(self):
-
-        # do your work here.
+        """
+        Do your work here.
+        """
         something_out = 0
         return something_out
 
@@ -55,7 +57,7 @@ class Factory(Process):
         """
         self.exit_signal = False
 
-    def run(self, ):
+    def run(self):
 
         counter = 0
         time_sum = 0
@@ -80,9 +82,8 @@ class Factory(Process):
             if self.fps_counter:
                 counter += 1
                 time_sum += (time.time() - start_time)
-                time_sum = max(time_sum, 0.001)
                 if counter > self.counter_time:
-                    print("{} FPS: {}".format(self.class_name(), counter / time_sum))
+                    print("{} FPS: {}".format(self.class_name(), counter / max(float(time_sum), 0.001)))
                     counter = 0
                     time_sum = 0
 
@@ -95,11 +96,12 @@ class Factory(Process):
                     # do your judge here, for example
                     queue_full_counter += 1
                     if (time.time() - start_time) > 10:
-                        print('{} {} Queue full {} times'.format('Factory', self.class_name(), queue_full_counter))
+                        print(f'Factory {self.class_name()} Queue full {queue_full_counter} times in last {time.time() - start_time} seconds.')
+
             if self.fps_counter:
                 start_time = time.time()
 
-        print('stop_event set, {} {} exit !'.format(self.class_name(), self.pid_number))
+        print(f'stop_event set, {self.class_name()} {self.pid_number} exit !')
 
 
 class Linker(Process):
@@ -114,15 +116,16 @@ class Linker(Process):
         self._stop_event = Event()
 
         # add init here
-        print('init {} {}, pid is {}.'.format('Linker', self.class_name(), self.pid_number))
+        print(f'Init Linker {self.class_name()}, pid is {self.pid_number}.')
 
     @classmethod
     def class_name(cls):
         return cls.__name__
 
     def forward_func(self, something_in):
-
-        # do your work here.
+        """
+        Do your work here.
+        """
         something_out = something_in
         return something_out
 
@@ -180,8 +183,8 @@ class Linker(Process):
                         # do your judge here, for example
                         queue_full_counter += 1
                         if (time.time() - start_time) > 10:
-                            print('{} {} Queue full {} times'.format('Linker', self.class_name(),
-                                                                     queue_full_counter))
+                            print('{} {} Queue full {} times'.format('Linker', self.class_name(), queue_full_counter))
+
         print('stop_event set, {} {} exit !'.format(self.class_name(), self.pid_number))
 
 
@@ -197,14 +200,16 @@ class Consumer(Process):
         self._stop_event = Event()
 
         # add init here
-        print('init {} {}, pid is {}.'.format('Consumer', self.class_name(), self.pid_number))
+        print(f'Init Consumer {self.class_name()}, pid is {self.pid_number}.')
 
     @classmethod
     def class_name(cls):
         return cls.__name__
 
     def forward_func(self, something_in):
-        # do your work here.
+        """
+        Do your work here.
+        """
         something_out = something_in
         return something_out
 
@@ -246,7 +251,7 @@ class Consumer(Process):
                 time_sum += (time.time() - start_time)
                 time_sum = max(time_sum, 0.001)
                 if counter > self.counter_time:
-                    print("{} FPS: {}".format(self.class_name(), counter / time_sum))
+                    print(f"{self.class_name()} FPS: {counter / time_sum}")
                     counter = 0
                     time_sum = 0
         print('stop_event set, {} {} exit !'.format(self.class_name(), self.pid_number))
