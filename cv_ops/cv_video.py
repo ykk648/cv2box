@@ -1,30 +1,33 @@
 # -- coding: utf-8 --
 # @Time : 2021/12/29
+# @LastEdit : 2024/10/9
 # @Author : ykk648
 # @Project : https://github.com/ykk648/cv2box
 import os
 import re
 import json
-import logging
 import cv2
+import subprocess
 import shutil
-from tqdm import tqdm
-from ..utils import os_call, try_import
+from ..utils import os_call, try_import, check_ffmpeg
+from .cv_image import CVImage
 import numpy as np
 from pathlib import Path
-
-
-def decode_fourcc(cc):
-    return "".join([chr((int(cc) >> 8 * i) & 0xFF) for i in range(4)])
+from ..utils import cv_print as print
 
 
 class CVVideo:
     def __init__(self, video_p, verbose=True, ffmpeg_path='ffmpeg'):
         self.video_path = video_p
         self.ffmpeg_path = ffmpeg_path
-        assert Path(self.video_path).exists()
-        self.video_dir, self.video_name = os.path.split(self.video_path)
-        self.prefix, self.suffix = os.path.splitext(self.video_name)
+        assert check_ffmpeg(self.ffmpeg_path), 'ffmpeg is not installed.'
+
+        video_path_posix = Path(self.video_path)
+        assert video_path_posix.exists(), 'video path does not exist.'
+        self.video_dir = video_path_posix.parent
+        self.video_name = video_path_posix.name
+        self.prefix = video_path_posix.stem
+        self.suffix = video_path_posix.suffix
         if verbose:
             self.print_video_info()
 
@@ -39,33 +42,86 @@ class CVVideo:
 
         size = (int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)), int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)))
         cap.release()
+
+        def decode_fourcc(cc):
+            return "".join([chr((int(cc) >> 8 * i) & 0xFF) for i in range(4)])
+
         print(f'video info:\nname: {self.video_name}\nfourcc: {decode_fourcc(fourcc)}\nframe_number: {frame_number}\nfps: {fps}\nduration: {duration}\nsize: {size}')
 
-    def show_video_cv(self, delay=100):
-        cap = cv2.VideoCapture(self.video_path)
-        success = True
-        while success:
-            success, frame = cap.read()
-            cv2.namedWindow("First Frame", 0)
-            cv2.imshow('First Frame', frame)
-            # cv2.waitKey(99999)
-            if cv2.waitKey(delay) == 27 or 0xFF == ord('q'):
-                break
-        cap.release()
-        cv2.destroyAllWindows()
+    def show_video_cv(self, delay=99999):
+        with CVVideoLoader(self.video_path) as cvvl:
+            for _ in range(len(cvvl)):
+                success, frame = cvvl.get()
+                CVImage(frame).show(delay)
+
+    def get_video_info_ffmpeg(self):
+        # 使用 ffmpeg 获取视频信息并直接输出 JSON
+        ffmpeg_command = [
+            self.ffmpeg_path,
+            "-i", self.video_path,  # 输入文件
+            "-f", "null",  # 输出格式为空（不生成输出文件）
+            "/dev/null"  # 输出到空设备
+        ]
+
+        # 通过 subprocess 调用 ffmpeg 并捕获输出（不写入文件）
+        process = subprocess.Popen(ffmpeg_command, stderr=subprocess.PIPE)
+        out, err = process.communicate()
+
+        # 检查 ffmpeg 的执行是否出错
+        if process.returncode != 0:
+            print(f"Error: {err.decode('utf-8')}")
+            return None
+
+        # 从 stderr 中提取视频信息
+        info = err.decode('utf-8')
+
+        # 正则表达式提取所需信息
+        width_height = re.search(r'(\d+)x(\d+)', info)
+        fps = re.search(r'(\d+(?:\.\d+)?) fps', info)
+        pix_fmt = re.search(r'(?<=pix_fmt:\s)(\S+)', info)
+        color_space = re.search(r'(?<=color_space:\s)(\S+)', info)
+        color_primaries = re.search(r'(?<=color_primaries:\s)(\S+)', info)
+        color_transfer = re.search(r'(?<=color_transfer:\s)(\S+)', info)
+
+        # 提取信息
+        if width_height:
+            width, height = map(int, width_height.groups())
+        else:
+            width, height = None, None
+
+        fps_value = eval(fps.group(1)) if fps else 25
+        pix_fmt_value = pix_fmt.group(0) if pix_fmt else 'bgr24'
+        color_space_value = color_space.group(0) if color_space else "bt709"
+        color_primaries_value = color_primaries.group(0) if color_primaries else "bt709"
+        color_transfer_value = color_transfer.group(0) if color_transfer else "bt709"
+
+        # 处理特定的像素格式情况
+        if pix_fmt_value == "yuv420p10le":
+            pix_fmt_value = "yuv420p"
+            color_space_value = "bt709"
+            color_primaries_value = "bt709"
+            color_transfer_value = "bt709"
+
+        video_info = {
+            "fps": fps_value,
+            "height": height,
+            "width": width,
+            "pix_fmt": pix_fmt_value,
+            "color_space": color_space_value,
+            "color_primaries": color_primaries_value,
+            "color_transfer": color_transfer_value
+        }
+        return video_info
 
     def video_2_h264(self, inplace=True):
         # ffmpeg -i input.mp4 -c:v libx264 -tag:v avc1 -movflags faststart -crf 30 -preset superfast output.mp4
         # https://tools.rotato.app/compress
         if not inplace:
-            os_call('ffmpeg -i {} -vcodec h264 {}'.format(self.video_path,
-                                                          self.video_path.replace(self.suffix, '_h264_out.mp4')))
+            os_call('ffmpeg -i {} -vcodec h264 {}'.format(self.video_path, self.video_path.replace(self.suffix, '_h264_out.mp4')))
         else:
             temp_p = self.video_path.replace(self.suffix, '_temp_copy.mp4')
             video_path_new = self.video_path.replace(self.suffix, '.mp4')
-            os_call(
-                'mv {} {} && ffmpeg -i {} -vcodec h264 {} && rm {}'.format(self.video_path, temp_p, temp_p,
-                                                                           video_path_new, temp_p))
+            os_call('mv {} {} && ffmpeg -i {} -vcodec h264 {} && rm {}'.format(self.video_path, temp_p, temp_p, video_path_new, temp_p))
 
     def change_video_speed(self, speed=1):
         assert 0.5 <= speed <= 2.0, 'Speed must between 0.5-2.0 .'
@@ -74,16 +130,14 @@ class CVVideo:
         os_call(command)
 
     @staticmethod
-    def concat_multi_video(video_dir):
+    def concat_multi_video_from_dir(video_dir):
         file_list = []
         for video_n in os.listdir(video_dir):
             file_list.append('file \'{}\'\n'.format(video_n))
         filelist_p = video_dir + '/filelist.txt'
         with open(filelist_p, 'w') as f:
             f.writelines(file_list)
-        command = 'ffmpeg -f concat -i {} -c copy {}.mp4 && rm {}'.format(filelist_p,
-                                                                          video_dir + '/' + 'multi_video_concat_result',
-                                                                          filelist_p)
+        command = 'ffmpeg -f concat -i {} -c copy {}.mp4 && rm {}'.format(filelist_p, video_dir + '/' + 'multi_video_concat_result', filelist_p)
         os_call(command)
 
     def crop_video(self, rec_list: tuple, format='libx264'):
@@ -302,24 +356,24 @@ class CVVideo:
         reader2.release()
 
         if copy_audio:
-            os_call('ffmpeg -i {} -vn -codec copy {}'.format(self.video_path, './temp.m4a'))
-            os_call("ffmpeg -i {} -i {} -vcodec copy -acodec copy {}".format(video_out_p, './temp.m4a',
+            os_call('ffmpeg -i "{}" -vn -codec copy "{}"'.format(self.video_path, './temp.m4a'))
+            os_call(' ffmpeg -i "{}" -i {} -vcodec copy -acodec copy "{}"'.format(video_out_p, './temp.m4a',
                                                                              video_out_p.replace('_concat_out.mp4',
                                                                                                  '_concat_out_audio.mp4')))
             os_call('rm ./temp.m4a')
-            os_call(f'rm {video_out_p}')
+            os_call(f"rm '{video_out_p}'")
 
         return video_out_p
 
-    def extract_audio(self, output_path=None, quiet=False, bitrate=44100):
-        video_suffix = Path(self.video_path).suffix
+    def extract_audio(self, output_path=None, quiet=False, sample_rate=44100):
         if not output_path:
-            output_path = self.video_path.replace(video_suffix, '_audio.wav')
+            output_path = Path(self.video_path).with_suffix('.wav')
+
         if quiet:
             ffmpeg_params = '-loglevel error'
         else:
             ffmpeg_params = '-loglevel info'
-        ffmpeg_log = os_call(f'{self.ffmpeg_path} -y -i {self.video_path} -vn -acodec pcm_s16le -ar {bitrate} -ac 1 {ffmpeg_params} {output_path}')
+        ffmpeg_log = os_call(f'{self.ffmpeg_path} -y -i {self.video_path} -vn -acodec pcm_s16le -ar {sample_rate} -ac 1 {ffmpeg_params} {output_path}')
         return ffmpeg_log
 
     def copy_audio(self, audio_src):
@@ -342,8 +396,17 @@ class CVVideo:
             os_call(
                 f'ffmpeg -i {self.video_path} -i {audio_src} -c copy -map 0:v -map 1:a -shortest {output_path}')
 
+    def bt2020_2_bt709(self):
+        """
+        ref https://www.bilibili.com/read/cv3936575/
+        :return:
+        """
+        output_path = self.video_path.replace('.mp4', '_bt709.mp4')
+        ffmpeg_command = f"{self.ffmpeg_path} -i {self.video_path} -vf zscale=t=linear:npl=100,format=gbrpf32le,zscale=p=bt709,tonemap=tonemap=hable:desat=0,zscale=t=bt709:m=bt709:r=tv,format=yuv420p -c:v libx264 -preset slow -crf 18 -c:a copy {output_path}"
+        os_call(ffmpeg_command)
 
-class CVVideoLoader(object, ):
+
+class CVVideoLoader(object):
     """
     based on OpenCV
     """
@@ -373,7 +436,7 @@ class CVVideoLoader(object, ):
         return self.cap.read()
 
 
-class CVVideoLoaderVidgear(object, ):
+class CVVideoLoaderVidgear(object):
     """
     based on Vidgear https://github.com/abhiTronix/vidgear
     internal queue to save opencv frame, similar as CVVideoThread
@@ -494,7 +557,7 @@ class CVVideoLoaderFFHWACCL(object, ):
 class CVVideoLoaderAV(object, ):
     """
     pip install av
-    based on https://github.com/PyAV-Org/PyAV, without hwaccel support, pure cpu, lost frames
+    based on https://github.com/PyAV-Org/PyAV, without hwaccel support, pure cpu, random lost frames
     """
 
     def __init__(self, video_p):
@@ -524,7 +587,7 @@ class CVVideoLoaderAV(object, ):
         return None, next(self.container.decode(self.video_stream)).to_ndarray(format='bgr24')
 
 
-class CVVideoMaker(object, ):
+class CVVideoMaker(object):
     @staticmethod
     def frame_2_video(frame_path_name, frame_rate=30, output_video_path=None):
         """

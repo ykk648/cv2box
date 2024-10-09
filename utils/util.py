@@ -93,7 +93,7 @@ def safe_cv_pyqt5():
 # https://docs.python.org/3.11/library/subprocess.html#replacing-os-system
 def os_call(command, silent=False, asyncio=False):
     if not silent:
-        print(command)
+        print(f'RUN {command}')
         
     if asyncio:
         subprocess.Popen(command, shell=True)
@@ -104,6 +104,7 @@ def os_call(command, silent=False, asyncio=False):
                 print("Child was terminated by signal", -retcode, file=sys.stderr)
             else:
                 print("Child returned", retcode, file=sys.stderr)
+            return retcode
         else:
             result = subprocess.Popen(command, shell=True, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
             try:
@@ -203,3 +204,16 @@ class OutCapture(list):
         self.extend(self._stringio.getvalue().splitlines())
         del self._stringio  # free up some memory
         sys.stdout = self._stdout
+
+
+def check_ffmpeg(ffmpeg_path='ffmpeg'):
+    try:
+        # 使用 subprocess.run 检查 ffmpeg 是否存在
+        result = subprocess.run([ffmpeg_path, '-version'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        # 如果返回码为 0，则表示 ffmpeg 存在
+        if result.returncode == 0:
+            return True
+        else:
+            return False
+    except FileNotFoundError:
+        return False
