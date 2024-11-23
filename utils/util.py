@@ -11,6 +11,7 @@ from pathlib import Path
 from importlib import import_module
 import warnings
 import sys
+import glob
 from unittest import result
 
 import numpy as np
@@ -94,7 +95,7 @@ def safe_cv_pyqt5():
 def os_call(command, silent=False, asyncio=False):
     if not silent:
         print(f'RUN {command}')
-        
+
     if asyncio:
         subprocess.Popen(command, shell=True)
     else:
@@ -134,6 +135,7 @@ class MyTimer(object):
     """
     timer
     """
+
     def __init__(self, show_name='test'):
         self.show_name = show_name
 
@@ -161,6 +163,7 @@ def mfc(flag='Your Func Name'):
     :param flag:
     :return:
     """
+
     def decorator(f):
         def wrapper(*args, **kwargs):
             t0 = time.time()
@@ -174,13 +177,17 @@ def mfc(flag='Your Func Name'):
     return decorator
 
 
-def get_path_by_ext(this_dir: str, ext_list: list = None, sorted_by_stem: bool = False, patten: str = '*'):
+def get_path_by_ext(this_dir: str, ext_list: list = None, sorted_by_stem: bool = False, pattern: str = "*"):
     if ext_list is None:
         print('Use image ext as default !')
-        ext_list = [".jpg", ".png", ".JPG", ".webp", ".jpeg", ".tiff"]
+        # set speedup list
+        ext_list = (".jpg", ".png", ".JPG", ".webp", ".jpeg", ".tiff")
+
+    # rglob is slower until py13: https://github.com/python/cpython/issues/102613
     if sorted_by_stem:
         return sorted([p for p in Path(this_dir).rglob(patten) if p.suffix in ext_list], key=lambda x: int(x.stem))
     else:
+        # return [p for p in glob.glob(f"{this_dir}/**/{pattern}") if p.suffix in ext_list] # glob
         return [p for p in Path(this_dir).rglob(patten) if p.suffix in ext_list]
 
 
@@ -195,6 +202,7 @@ class OutCapture(list):
     """
     capture output to string
     """
+
     def __enter__(self):
         self._stdout = sys.stdout
         sys.stdout = self._stringio = StringIO()
