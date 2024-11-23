@@ -1,18 +1,14 @@
 ### CVAudio
 
-Audio preprocessing.
+Audio preprocess based on ffmpeg.
 
 #### example
 
 ```python
 from cv2box.cv_ops.cv_audio import CVAudio
-audio_p = ''
-ca = CVAudio(audio_p, sr=16000)
-print(ca.data.shape)
-mel = ca.mel_spectrogram(True, 25)
-print(mel.shape)
-individual_mel = ca.individual_mel_spec(mel)
-print(individual_mel.shape)
+audio_p = r''
+cva = CVAudio("./ffmpeg")
+print(cva.get_duration(audio_p))
 ```
 
 ### CVImage
