@@ -1,8 +1,8 @@
 # -- coding: utf-8 --
 # @Time : 2022/6/28
-# @LastEdit : 2024/10/9
+# @LastEdit : 2025/4/25
 # @Author : ykk648
-# @Project : https://github.com/ykk648/cv2box
+
 from pathlib import Path
 import os
 import time
@@ -210,12 +210,13 @@ class CVCamThread(Process):
 
 class CVVideoWriterThread(Process):
 
-    def __init__(self, video_writer, queue_list: list, block=True, fps_counter=False):
+    def __init__(self, video_writer, queue_list: list, block=True, fps_counter=False, counter_time=300):
         super().__init__()
         assert len(queue_list) == 1
         self.video_writer = video_writer
         self.queue_list = queue_list
         self.fps_counter = fps_counter
+        self.counter_time = counter_time
         self.block = block
         self.pid_number = os.getpid()
         print('Init %s %s, pid is %s.', self.class_name(), self.__class__.__name__, self.pid_number)
@@ -228,19 +229,32 @@ class CVVideoWriterThread(Process):
 
         counter = 0
         time_sum = 0
-        start_time = time.time()
 
         while True:
             something = self.queue_list[0].get()
-
+            if self.fps_counter:
+                start_time = time.time()
             # exit condition
             if something is None:
                 break
 
             src_img_in = something[0]
 
+            if src_img_in is None:
+                break
+
             if isinstance(self.video_writer, subprocess.Popen):
-                self.video_writer.stdin.write(src_img_in.tobytes())
+                try:
+                    self.video_writer.stdin.write(src_img_in.tobytes())
+                    # 检查进程是否还在运行
+                    if self.video_writer.poll() is not None:
+                        error_output = self.video_writer.stderr.read() if self.video_writer.stderr else 'Unknown error'
+                        print(f'FFmpeg process terminated unexpectedly with return code {self.video_writer.returncode}')
+                        print(f'Error output: {error_output}')
+                        break
+                except (BrokenPipeError, IOError) as e:
+                    print(f'FFmpeg pipe error: {e}')
+                    break
             elif isinstance(self.video_writer, cv2.VideoWriter):
                 self.video_writer.write(src_img_in)
             else:
@@ -249,10 +263,10 @@ class CVVideoWriterThread(Process):
             if self.fps_counter:
                 counter += 1
                 time_sum += (time.time() - start_time)
-                if time_sum > 10:
-                    print("%s FPS: %s", self.class_name(), counter / time_sum)
+                time_sum = max(time_sum, 0.001)
+                if counter > self.counter_time:
+                    print("{} FPS: {}".format(self.class_name(), counter / time_sum))
                     counter = 0
                     time_sum = 0
-                start_time = time.time()
 
         print('Video save done, %s exit', self.class_name())
