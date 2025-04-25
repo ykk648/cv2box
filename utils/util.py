@@ -1,5 +1,6 @@
 # -- coding: utf-8 --
-# @LastEdit : 2024/4/12
+# @Time : 2024/4/12
+# @LastEdit : 2025/4/25
 # @Author : ykk648
 
 import os
@@ -177,18 +178,21 @@ def mfc(flag='Your Func Name'):
     return decorator
 
 
-def get_path_by_ext(this_dir: str, ext_list: list = None, sorted_by_stem: bool = False, pattern: str = "*"):
+def get_path_by_ext(this_dir: str, ext_list: list[str] | None = None, sorted_by_stem: bool = False, pattern: str = "*") -> list[Path]:
     if ext_list is None:
         print('Use image ext as default !')
         # set speedup list
         ext_list = (".jpg", ".png", ".JPG", ".webp", ".jpeg", ".tiff")
 
+    # Convert to set for O(1) lookup
+    ext_set = set(ext_list)
+
     # rglob is slower until py13: https://github.com/python/cpython/issues/102613
     if sorted_by_stem:
-        return sorted([p for p in Path(this_dir).rglob(patten) if p.suffix in ext_list], key=lambda x: int(x.stem))
+        return sorted([p for p in Path(this_dir).rglob(pattern) if p.suffix in ext_set], key=lambda x: int(x.stem))
     else:
         # return [p for p in glob.glob(f"{this_dir}/**/{pattern}") if p.suffix in ext_list] # glob
-        return [p for p in Path(this_dir).rglob(patten) if p.suffix in ext_list]
+        return [p for p in Path(this_dir).rglob(pattern) if p.suffix in ext_set]
 
 
 def try_import(module_name, warn_message=None):

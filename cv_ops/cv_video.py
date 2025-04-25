@@ -1,8 +1,8 @@
 # -- coding: utf-8 --
 # @Time : 2021/12/29
-# @LastEdit : 2024/10/9
+# @LastEdit : 2025/4/25
 # @Author : ykk648
-# @Project : https://github.com/ykk648/cv2box
+
 import os
 import re
 import json
@@ -164,7 +164,7 @@ class CVVideo:
                         start) is not None, 'The time format: start:00:00:15 last_time:00:00:15 etc.'
         assert re.match(r"(\d{1,2}:\d{1,2}:\d{1,2})",
                         last_time) is not None, 'The time format: start:00:00:15 last_time:00:00:15 etc.'
-        cut_out_video_path = self.video_dir + '/' + self.prefix + '_cut_out.mp4'
+        cut_out_video_path = str(self.video_dir) + '/' + self.prefix + '_cut_out.mp4'
         if not accurate:
             command = 'ffmpeg -y -ss {} -t {} -i "{}" -codec copy "{}"'.format(start, last_time, self.video_path,
                                                                                cut_out_video_path)
@@ -223,9 +223,9 @@ class CVVideo:
         suffix = Path(self.video_path).suffix
         # print(suffix)
         if out_path is None:
-            save_path = self.video_path.split(suffix)[0] + '/'
+            save_path = self.video_path.split(suffix)[0]
         else:
-            save_path = out_path + '/'
+            save_path = out_path
 
         is_exists = os.path.exists(save_path)
         if not is_exists:
@@ -252,13 +252,15 @@ class CVVideo:
                     print('done!')
                 break
             if i % interval == 0:
-                # 保存图片
+                # 支持中文
                 j += 1
                 if compress:
-                    save_name = save_path + str(j) + '_' + str(i) + '.jpg'
+                    save_name = str(Path(save_path) / f"{j}_{i}.jpg")
+                    cv2.imencode(ext='.jpg', img=frame)[1].tofile(save_name)
                 else:
-                    save_name = save_path + str(j) + '_' + str(i) + '.png'
-                cv2.imwrite(save_name, frame)
+                    save_name = str(Path(save_path) / f"{j}_{i}.png")
+                    cv2.imencode(ext='.png', img=frame)[1].tofile(save_name)
+                # cv2.imwrite(save_name, frame)
                 if verbose:
                     print('image of %s is saved' % save_name)
         video_capture.release()
@@ -356,13 +358,12 @@ class CVVideo:
         reader2.release()
 
         if copy_audio:
-            os_call('ffmpeg -i "{}" -vn -codec copy "{}"'.format(self.video_path, './temp.m4a'))
-            os_call(' ffmpeg -i "{}" -i {} -vcodec copy -acodec copy "{}"'.format(video_out_p, './temp.m4a',
+            os_call('ffmpeg -y -i "{}" -vn -codec copy "{}"'.format(self.video_path, './temp.m4a'))
+            os_call(' ffmpeg -y -i "{}" -i {} -vcodec copy -acodec copy "{}"'.format(video_out_p, './temp.m4a',
                                                                              video_out_p.replace('_concat_out.mp4',
                                                                                                  '_concat_out_audio.mp4')))
-            os_call('rm ./temp.m4a')
-            os_call(f"rm '{video_out_p}'")
-
+            Path("./temp.m4a").unlink()
+            Path(video_out_p).unlink()
         return video_out_p
 
     def extract_audio(self, output_path=None, quiet=False, sample_rate=44100):
@@ -423,17 +424,28 @@ class CVVideoLoader(object):
         self.codec = chr(codec & 0xFF) + chr((codec >> 8) & 0xFF) + chr((codec >> 16) & 0xFF) + chr((codec >> 24) & 0xFF)
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.cap.release()
+    def reset(self):
+        """重置视频到起始位置
+        Returns:
+            bool: 是否重置成功
+        """
+        if self.cap is None:
+            return False
+        return self.cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+
+    def get(self):
+        """获取下一帧
+        Returns:
+            tuple: (success, frame)
+        """
+        return self.cap.read()
 
     def __len__(self):
         return int(self.frames_num)
 
-    def get(self):
-        """
-        Returns: success, frame
-        """
-        return self.cap.read()
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if self.cap:
+            self.cap.release()
 
 
 class CVVideoLoaderVidgear(object):
@@ -585,6 +597,65 @@ class CVVideoLoaderAV(object, ):
         Returns: frame
         """
         return None, next(self.container.decode(self.video_stream)).to_ndarray(format='bgr24')
+
+
+class CVVideoLoaderTorch(object):
+    """
+    Video loader based on torchcodec
+    """
+
+    def __init__(self, video_p):
+        self.video_p = video_p
+
+    def __enter__(self):
+        VideoDecoder = try_import('torchcodec.decoders')
+        self.decoder = VideoDecoder(self.video_p)
+        # Get video metadata
+        self.frames_num = len(self.decoder)
+        self.fps = self.decoder.fps
+        self.size = (self.decoder.width, self.decoder.height)
+        # Note: torchcodec doesn't expose codec info directly
+        self.codec = None
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        # VideoDecoder will handle cleanup automatically
+        pass
+
+    def __len__(self):
+        return self.frames_num
+
+    def get(self):
+        """
+        Get next frame from video
+        Returns: success (bool), frame (torch.Tensor)
+        """
+        try:
+            # Get next frame - note this is simplified as torchcodec doesn't have
+            # a direct frame-by-frame reading mechanism like OpenCV
+            frame = self.decoder[self.current_frame:self.current_frame + 1]
+            self.current_frame += 1
+            return True, frame.squeeze(0)  # Remove batch dimension
+        except IndexError:
+            return False, None
+
+    def get_frames_at(self, indices):
+        """
+        Get frames at specific indices
+        Args:
+            indices: List of frame indices to retrieve
+        Returns: torch.Tensor of frames
+        """
+        return self.decoder.get_frames_at(indices=indices)
+
+    def get_frames_by_time(self, seconds):
+        """
+        Get frames at specific timestamps
+        Args:
+            seconds: List of timestamps in seconds
+        Returns: torch.Tensor of frames
+        """
+        return self.decoder.get_frames_played_at(seconds=seconds)
 
 
 class CVVideoMaker(object):

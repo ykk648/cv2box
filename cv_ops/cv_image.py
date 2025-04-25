@@ -1,7 +1,7 @@
 # -- coding: utf-8 --
 # @Time : 2021/11/19
+# @LastEdit : 2025/4/25
 # @Author : ykk648
-# @Project : https://github.com/ykk648/cv2box
 
 import os
 import cv2
@@ -122,8 +122,16 @@ class ImageBasic:
             raise 'Check the size input !'
         return self
 
-    def show(self, wait_time=0, window_name='test'):
+    def show(self, wait_time=0, window_name='test', show_pixel=False):
         cv2.namedWindow(window_name, 0)
+
+        if show_pixel:
+            def show_pixel(event, x, y, flags, param):
+                if event == cv2.EVENT_MOUSEMOVE:
+                    pixel = self.cv_image[y, x]
+                    print(f"loc ({x}, {y}) | pixel: {pixel}")
+            cv2.setMouseCallback(window_name, show_pixel)
+
         cv2.imshow(window_name, self.cv_image)
         cv2.waitKey(wait_time)
         # key = cv2.waitKey(wait_time) & 0xFF
