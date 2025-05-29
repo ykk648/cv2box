@@ -1,14 +1,16 @@
 # -- coding: utf-8 --
 # @Time : 2021/11/19
-# @LastEdit : 2025/4/25
+# @LastEdit : 2025/5/29
 # @Author : ykk648
 
-import os
-import cv2
-import numpy as np
 import base64
 import io
+import os
 from pathlib import PosixPath, Path
+
+import cv2
+import numpy as np
+
 from ..utils import try_import
 
 """
@@ -123,22 +125,28 @@ class ImageBasic:
         return self
 
     def show(self, wait_time=0, window_name='test', show_pixel=False):
-        cv2.namedWindow(window_name, 0)
+        # Create a window with the same size as the image
+        cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
+        # Get image dimensions
+        height, width = self.cv_image.shape[:2]
+        # Set window size to match image size
+        cv2.resizeWindow(window_name, width, height)
 
         if show_pixel:
             def show_pixel(event, x, y, flags, param):
                 if event == cv2.EVENT_MOUSEMOVE:
-                    pixel = self.cv_image[y, x]
-                    print(f"loc ({x}, {y}) | pixel: {pixel}")
+                    # Get image dimensions
+                    height, width = self.cv_image.shape[:2]
+
+                    # Check if coordinates are within image boundaries
+                    if 0 <= y < height and 0 <= x < width:
+                        pixel = self.cv_image[y, x]
+                        print(f"loc ({x}, {y}) | pixel: {pixel}")
+
             cv2.setMouseCallback(window_name, show_pixel)
 
         cv2.imshow(window_name, self.cv_image)
         cv2.waitKey(wait_time)
-        # key = cv2.waitKey(wait_time) & 0xFF
-        # # check for 'q' key-press
-        # if key == ord("q"):
-        #     # if 'q' key-pressed break out
-        #     return False
 
     def save(self, img_save_p, compress=False, create_path=False):
         if create_path:

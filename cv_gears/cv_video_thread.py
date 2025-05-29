@@ -1,6 +1,6 @@
 # -- coding: utf-8 --
 # @Time : 2022/6/28
-# @LastEdit : 2025/4/25
+# @LastEdit : 2025/6/9
 # @Author : ykk648
 
 from pathlib import Path
@@ -12,11 +12,11 @@ import cv2
 import subprocess
 
 if os.environ['CV_MULTI_MODE'] == 'multi-process':
-    from multiprocessing import Process, Queue, Lock
+    from multiprocessing import Process, Queue, Lock, Event
 elif os.environ['CV_MULTI_MODE'] == 'torch-process':
-    from torch.multiprocessing import Process, Queue, Lock
+    from torch.multiprocessing import Process, Queue, Lock, Event
 else:
-    from multiprocessing.dummy import Process, Queue, Lock  # multi-thread
+    from multiprocessing.dummy import Process, Queue, Lock, Event  # multi-thread
 
 from ..cv_ops.cv_video import CVVideoLoader
 from ..utils import cv_print as print
@@ -33,11 +33,15 @@ class CVVideoThread(Process):
         self.fps_counter = fps_counter
         self.block = block
         self.pid_number = os.getpid()
+        self._stop_event = Event()
         print('Init %s %s, pid is %s.', self.class_name(), self.__class__.__name__, self.pid_number)
 
     @classmethod
     def class_name(cls):
         return cls.__name__
+
+    def stop(self):
+        self._stop_event.set()
 
     def run(self, ):
         """

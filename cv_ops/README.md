@@ -110,7 +110,7 @@ get_cvq = CVQueue(10, mem_name='cv2box')
 while True:
     get_buf, get_buffer_len = get_cvq.get()
     image_to_show = bytes(get_buf.buf[:get_buffer_len])
-    get_q.get_ok()
+    get_cvq.get_ok()
     frame_get = CVImage(image_to_show, image_format='buffer',image_size=(frame_height, frame_width, 3)).bgr
     CVImage(frame_get).show()
 ```

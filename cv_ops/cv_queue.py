@@ -1,15 +1,12 @@
 # -- coding: utf-8 --
 # @Time : 2021/12/7
+# @LastEdit : 2025/5/29
 # @Author : ykk648
-# @Project : https://github.com/ykk648/cv2box
+
 import time
 import uuid
 import numpy as np
-import logging
-from ..utils.util import try_import
-
-# python > 3.8
-shared_memory = try_import('multiprocessing.shared_memory', 'cv_queue: plz make sure your python version >= 3.8.')
+from multiprocessing import shared_memory
 
 
 class CVQueue:
@@ -73,9 +70,8 @@ class CVQueue:
         for i in range(self.queue_length):
             self.index_shm[i] = 'None'
 
-    def put(self, push_buffer, aim_format=None):
-        # if aim_format == 'numpy':
-        #     push_buffer = push_buffer.tobytes()
+    def push(self, push_buffer, aim_format=None):
+        assert isinstance(push_buffer, bytes), 'push_buffer must be bytes'
 
         while True:
             self.push_buffer_len = len(push_buffer)
