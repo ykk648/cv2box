@@ -1,12 +1,15 @@
 # -- coding: utf-8 --
 # @Time : 2021/12/7
-# @LastEdit : 2025/5/29
+# @LastEdit : 2025/6/9
 # @Author : ykk648
 
 import time
 import uuid
 import numpy as np
 from multiprocessing import shared_memory
+
+# Global registry to track all shared memory objects
+_shared_memory_registry = set()
 
 
 class CVQueue:
@@ -25,6 +28,11 @@ class CVQueue:
         self.data_size_shm = None
         self.data_shm_name_list = []
         self.data_size_list = []
+
+        # Register the memory names in the global registry
+        global _shared_memory_registry
+        _shared_memory_registry.add(self.index_mem_name)
+        _shared_memory_registry.add(self.data_size_name)
 
         if not max_data_size:
             if retry:
@@ -65,6 +73,11 @@ class CVQueue:
                 shared_memory.SharedMemory(name=data_shm_name, create=True, size=self.max_data_size))
             self.data_shm_name_list.append(data_shm_name)
             self.data_size_list.append(self.max_data_size)
+
+            # Register each data shared memory object
+            global _shared_memory_registry
+            _shared_memory_registry.add(data_shm_name)
+
         self.index_shm = shared_memory.ShareableList(self.data_shm_name_list, name=self.index_mem_name)
         self.data_size_shm = shared_memory.ShareableList(self.data_size_list, name=self.data_size_name)
         for i in range(self.queue_length):
@@ -87,7 +100,21 @@ class CVQueue:
     # def put_ok(self):
     #     pass
 
-    def get(self):
+    def get(self, timeout=None):
+        """
+        Get data from the shared memory queue
+
+        Args:
+            timeout: Maximum time to wait for data in seconds. None means wait indefinitely.
+
+        Returns:
+            get_buffer: SharedMemory object containing the data
+            get_buffer_len: Length of the data in bytes
+
+        Raises:
+            TimeoutError: If timeout is reached and no data is available
+        """
+        start_time = time.time()
         while True:
             try:
                 if self.index_shm[self.get_flag] != 'None':
@@ -96,10 +123,20 @@ class CVQueue:
                     # time.sleep(0.02)
                     get_buffer_len = self.data_size_shm[self.get_flag]
                     break
+
+                # Check if timeout has been reached
+                if timeout is not None and (time.time() - start_time) > timeout:
+                    raise TimeoutError("Timeout waiting for data in shared memory queue")
+
                 time.sleep(self.rw_sleep_time)
             except ValueError:
                 print('occur one mem access false, wait {}s and retry'.format(self.rw_sleep_time))
                 time.sleep(self.rw_sleep_time)
+
+                # Check if timeout has been reached
+                if timeout is not None and (time.time() - start_time) > timeout:
+                    raise TimeoutError("Timeout waiting for data in shared memory queue")
+
                 continue
         return get_buffer, get_buffer_len
 
@@ -109,22 +146,63 @@ class CVQueue:
         self.get_flag %= self.queue_length
 
     def close(self):
+        """Close and unlink all shared memory objects associated with this queue and clean up all registered shared memory"""
+        global _shared_memory_registry
+
+        # Close and unlink index shared memory
         try:
-            self.index_shm.shm.close()
-            self.index_shm.shm.unlink()
-        except FileNotFoundError:
-            return
+            if hasattr(self, 'index_shm') and self.index_shm is not None:
+                try:
+                    self.index_shm.shm.close()
+                    self.index_shm.shm.unlink()
+                    _shared_memory_registry.discard(self.index_mem_name)
+                except (FileNotFoundError, BufferError) as e:
+                    pass
+        except Exception:
+            pass
+
+        # Close and unlink data size shared memory
         try:
-            self.data_size_shm.shm.close()
-            self.data_size_shm.shm.unlink()
-        except FileNotFoundError:
-            return
+            if hasattr(self, 'data_size_shm') and self.data_size_shm is not None:
+                try:
+                    self.data_size_shm.shm.close()
+                    self.data_size_shm.shm.unlink()
+                    _shared_memory_registry.discard(self.data_size_name)
+                except (FileNotFoundError, BufferError) as e:
+                    pass
+        except Exception:
+            pass
+
+        # Close and unlink all data shared memory objects
         for i in range(len(self.data_shm_list)):
             try:
-                self.data_shm_list[i].close()
-                self.data_shm_list[i].unlink()
-            except FileNotFoundError:
-                return
+                if self.data_shm_list[i] is not None:
+                    try:
+                        name = self.data_shm_name_list[i] if i < len(self.data_shm_name_list) else None
+                        self.data_shm_list[i].close()
+                        self.data_shm_list[i].unlink()
+                        if name:
+                            _shared_memory_registry.discard(name)
+                    except (FileNotFoundError, BufferError) as e:
+                        pass
+            except Exception:
+                pass
+
+        # Clean up all remaining shared memory objects
+        if _shared_memory_registry:
+            print(f"Cleaning up {len(_shared_memory_registry)} remaining shared memory objects...")
+            for name in list(_shared_memory_registry):
+                try:
+                    # Try to directly unlink the shared memory
+                    try:
+                        shm = shared_memory.SharedMemory(name=name)
+                        shm.close()
+                        shm.unlink()
+                    except Exception:
+                        pass
+                    _shared_memory_registry.discard(name)
+                except Exception:
+                    pass
 
     def full(self):
         time.sleep(self.rw_sleep_time)
@@ -143,13 +221,3 @@ class CVQueue:
             print('occur one mem access false, wait {}s and retry'.format(self.rw_sleep_time))
             time.sleep(self.rw_sleep_time)
             return (np.array(self.index_shm) == 'None').all()
-
-    @staticmethod
-    def clean_mem(mem_list: list, silence=True):
-        for name in mem_list:
-            try:
-                CVQueue(10, mem_name=name, retry=False, silence=True).close()
-            except:
-                pass
-        if not silence:
-            print('clean mem \'{} \'done !'.format(mem_list))
