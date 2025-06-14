@@ -6,6 +6,8 @@ Multithread waterfall sequence: Factory -> Linker -> Consumer
 
 If you need circle or tree structure, just add more queue to queue_list.
 
+Linker support pass queue list to forward_func, which is useful for multi-output.
+
 #### multi-mode switch
 
 Default mode is multi-thread, which is most economical.

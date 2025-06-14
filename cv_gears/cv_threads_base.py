@@ -1,6 +1,6 @@
 # -- coding: utf-8 --
 # @Time : 2022/6/28
-# @LastEdit : 2025/4/25
+# @LastEdit : 2025/6/12
 # @Author : ykk648
 
 """
@@ -12,6 +12,7 @@ import os
 import time
 import queue
 from typing import List, Any
+import threading
 
 from ..utils import cv_print as print
 
@@ -31,12 +32,13 @@ class Factory(Process):
         self.fps_counter = fps_counter
         self.counter_time = counter_time
         self.block = block
-        self.pid_number = os.getpid()
+        self.pid_number = None  # 将在run()中设置
+        self.thread_id = None   # 将在run()中设置
         self.exit_signal = False
         self._stop_event = Event()
 
         # add init here
-        print(f'Init Factory {self.class_name()}, pid is {self.pid_number}.')
+        print(f'Init Factory {self.class_name()} in main thread')
 
     @classmethod
     def class_name(cls):
@@ -61,6 +63,11 @@ class Factory(Process):
         self.exit_signal = False
 
     def run(self):
+        # 在新进程中获取正确的ID
+        self.pid_number = os.getpid()
+        self.thread_id = threading.get_ident()
+        print(f'Starting {self.class_name()}, pid={self.pid_number}, thread_id={self.thread_id}')
+
         counter = 0
         time_sum = 0
         queue_full_counter = 0
@@ -71,7 +78,7 @@ class Factory(Process):
             # exit condition
             self.exit_func()
             if self.exit_signal:
-                print(f'{self.class_name()} {self.pid_number} exit !')
+                print(f'{self.class_name()} get exit signal !')
                 self.queue_list[0].put(None)
                 break
 
@@ -85,7 +92,7 @@ class Factory(Process):
                 raise
 
             current_time = time.time()
-            
+
             if self.fps_counter:
                 counter += 1
                 time_sum += (current_time - start_time)
@@ -111,7 +118,7 @@ class Factory(Process):
             if self.fps_counter:
                 start_time = current_time
 
-        print(f'stop_event set, {self.class_name()} {self.pid_number} exit !')
+        print(f'Stop run func, {self.class_name()} {self.pid_number} {self.thread_id} exit !')
 
 
 class Linker(Process):
@@ -121,13 +128,15 @@ class Linker(Process):
         self.fps_counter = fps_counter
         self.counter_time = counter_time
         self.block = block
-        self.pid_number = os.getpid()
+        self.pid_number = None  # 将在run()中设置
+        self.thread_id = None   # 将在run()中设置
         self.exit_signal = False
         self._stop_event = Event()
-        self.timeout = timeout  # Timeout in seconds
+        self.timeout = timeout
+        self.last_active_time = time.time()
+        assert len(queue_list) > 1, "Linker queue list length must > 1"
 
-        # add init here
-        print(f'Init Linker {self.class_name()}, pid is {self.pid_number}.')
+        print(f'Init Linker {self.class_name()} in main thread')
 
     @classmethod
     def class_name(cls):
@@ -151,19 +160,24 @@ class Linker(Process):
         """
         If something is None, enter exit func, set `pass` if you want deal with exit by yourself.
         """
-        print('{} {} exit !'.format(self.class_name(), self.pid_number))
-        try:
-            self.queue_list[1].put(None, timeout=5)
-        except queue.Full:
-            pass
+        # Send None to all output queues
+        for q in self.queue_list[1:]:
+            try:
+                q.put(None, timeout=5)
+            except queue.Full:
+                pass
         self.exit_signal = True
 
     def run(self):
+        # 在新进程中获取正确的ID
+        self.pid_number = os.getpid()
+        self.thread_id = threading.get_ident()
+        print(f'Starting {self.class_name()}, pid={self.pid_number}, thread_id={self.thread_id}')
 
         counter = 0
         time_sum = 0
         queue_full_counter = 0
-        start_time = 0
+        start_time = time.time()
 
         while not self._stop_event.is_set():
             try:
@@ -171,7 +185,7 @@ class Linker(Process):
                 if self.fps_counter:
                     start_time = time.time()
             except queue.Empty:
-                print(f'{self.class_name()} {self.pid_number} timeout after {self.timeout} seconds')
+                print(f'{self.class_name()} {self.pid_number} {self.thread_id} timeout after {self.timeout} seconds')
                 self.exit_func()
                 break
 
@@ -179,6 +193,7 @@ class Linker(Process):
             if something_in is None:
                 self.exit_func()
             if self.exit_signal:
+                print(f'{self.class_name()} get exit signal !')
                 break
 
             try:
@@ -196,18 +211,19 @@ class Linker(Process):
                     counter = 0
                     time_sum = 0
 
-            if len(self.queue_list) > 1:
+            for output_queue in self.queue_list[1:]:
                 try:
                     if self.block:
-                        self.queue_list[1].put(something_out, timeout=self.timeout)
+                        output_queue.put(something_out, timeout=self.timeout)
                     else:
-                        self.queue_list[1].put_nowait(something_out)
+                        output_queue.put_nowait(something_out)
                 except queue.Full:
                     queue_full_counter += 1
                     print(f'{self.class_name()} {self.pid_number} put timeout/full after {self.timeout} seconds')
                     self.exit_func()
                     break
-        print('stop_event set, {} {} exit !'.format(self.class_name(), self.pid_number))
+
+        print(f'Stop run func, {self.class_name()} {self.pid_number} {self.thread_id} exit !')
 
 
 class Consumer(Process):
@@ -217,12 +233,13 @@ class Consumer(Process):
         self.fps_counter = fps_counter
         self.counter_time = counter_time
         self.block = block
-        self.pid_number = os.getpid()
+        self.pid_number = None  # 将在run()中设置
+        self.thread_id = None   # 将在run()中设置
         self.exit_signal = False
         self._stop_event = Event()
 
         # add init here
-        print(f'Init Consumer {self.class_name()}, pid is {self.pid_number}.')
+        print(f'Init Consumer {self.class_name()} in main thread')
 
     @classmethod
     def class_name(cls):
@@ -244,14 +261,17 @@ class Consumer(Process):
         """
         If something is None, enter exit func, set `pass` if you want deal with exit by yourself.
         """
-        print('{} {} exit !'.format(self.class_name(), self.pid_number))
         self.exit_signal = True
 
     def run(self):
+        # 在新进程中获取正确的ID
+        self.pid_number = os.getpid()
+        self.thread_id = threading.get_ident()
+        print(f'Starting {self.class_name()}, pid={self.pid_number}, thread_id={self.thread_id}')
 
         counter = 0
         time_sum = 0
-        start_time = 0
+        start_time = time.time()
 
         while not self._stop_event.is_set():
             something_in = self.queue_list[0].get()
@@ -262,6 +282,7 @@ class Consumer(Process):
             if something_in is None:
                 self.exit_func()
             if self.exit_signal:
+                print(f'{self.class_name()} get exit signal !')
                 break
 
             try:
@@ -278,4 +299,50 @@ class Consumer(Process):
                     print(f"{self.class_name()} FPS: {counter / time_sum}")
                     counter = 0
                     time_sum = 0
-        print('stop_event set, {} {} exit !'.format(self.class_name(), self.pid_number))
+
+        print(f'Stop run func, {self.class_name()} {self.pid_number} {self.thread_id} exit !')
+
+
+class QueueMonitor(Process):
+    def __init__(self, queue_list: List[Queue], monitor_interval: float = 1.0,
+                 alert_threshold: int = 100, name: str = "QueueMonitor"):
+        """
+        Initialize a queue monitor that periodically checks queue lengths.
+
+        Args:
+            queue_list: List of queues to monitor
+            monitor_interval: How often to check queue lengths (in seconds)
+            alert_threshold: Print warning if queue length exceeds this value
+            name: Name of this monitor instance for logging
+        """
+        super().__init__()
+        self.queue_list = queue_list
+        self.monitor_interval = monitor_interval
+        self.alert_threshold = alert_threshold
+        self.monitor_name = name
+        self._stop_event = Event()
+        self.pid_number = None  # 将在run()中设置
+        print(f'Init {self.monitor_name} in main thread')
+
+    def run(self):
+        # 在新进程中获取正确的ID
+        self.pid_number = os.getpid()
+        print(f'Starting {self.monitor_name}, pid={self.pid_number}')
+
+        """Periodically check and report queue lengths."""
+        while not self._stop_event.is_set():
+            queue_sizes = []
+            for i, q in enumerate(self.queue_list):
+                size = q.qsize()
+                queue_sizes.append(size)
+                if size > self.alert_threshold:
+                    print(f"⚠️ {self.monitor_name}: Queue {i} size ({size}) exceeds threshold {self.alert_threshold}")
+
+            print(f"{self.monitor_name} - Queue sizes: {queue_sizes}")
+            time.sleep(self.monitor_interval)
+
+        print(f"{self.monitor_name} stopped.")
+
+    def stop(self):
+        """Stop the monitor."""
+        self._stop_event.set()
