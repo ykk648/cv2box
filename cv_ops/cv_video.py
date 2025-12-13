@@ -150,7 +150,7 @@ class CVVideo:
         size_str = '{}:{}:{}:{}'.format(str(out_w), str(out_h), str(x), str(y))
         command = 'ffmpeg -y -i {} -filter:v "crop={}" -c:v {} -crf 17 -c:a copy {}.mp4'.format(self.video_path,
                                                                                                 size_str, format,
-                                                                                                self.video_dir + '/' + self.prefix + '_out')
+                                                                                                self.video_dir / f"{self.prefix}_out")
         os_call(command)
 
     def cut_video(self, start, last_time, accurate=False):

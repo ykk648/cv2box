@@ -29,7 +29,7 @@ from threading import Thread, Event
 from .helper import (
     capPropId,
     # logger_handler,
-    check_CV_version,
+    # check_CV_version,
     get_supported_resolution,
     check_gstreamer_support,
     import_dependency_safe,
@@ -135,13 +135,7 @@ class CamGear:
         self.stream = None
 
         if backend and isinstance(backend, int):
-            # add backend if specified and initialize the camera stream
-            if check_CV_version() == 3:
-                # Different OpenCV 3.4.x statement
-                self.stream = cv2.VideoCapture(source + backend)
-            else:
-                # Two parameters are available since OpenCV 4+ (master branch)
-                self.stream = cv2.VideoCapture(source, backend)
+            self.stream = cv2.VideoCapture(source, backend)
             logger.debug("Setting backend `{}` for this source.".format(backend))
         else:
             # initialize the camera stream

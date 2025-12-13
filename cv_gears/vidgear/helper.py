@@ -39,7 +39,7 @@ from tqdm import tqdm
 from contextlib import closing
 from pathlib import Path
 # from colorlog import ColoredFormatter
-from distutils.version import LooseVersion
+# from distutils.version import LooseVersion
 # from requests.adapters import HTTPAdapter
 # from requests.packages.urllib3.util.retry import Retry
 # from ..version import __version__
@@ -165,19 +165,19 @@ def import_dependency_safe(
             module_to_get = module
         # extract version
         version = get_module_version(module_to_get)
-        # verify
-        if LooseVersion(version) < LooseVersion(min_version):
-            # create message
-            msg = """Unsupported version '{}' found. Vidgear requires '{}' dependency installed with version '{}' or greater. 
-            Update it with  `pip install -U {}` command.""".format(
-                parent_module, min_version, version, install_name
-            )
-            # handle errors.
-            if error == "silent":
-                return None
-            else:
-                # raise
-                raise ImportError(msg)
+        # # verify
+        # if LooseVersion(version) < LooseVersion(min_version):
+        #     # create message
+        #     msg = """Unsupported version '{}' found. Vidgear requires '{}' dependency installed with version '{}' or greater.
+        #     Update it with  `pip install -U {}` command.""".format(
+        #         parent_module, min_version, version, install_name
+        #     )
+        #     # handle errors.
+        #     if error == "silent":
+        #         return None
+        #     else:
+        #         # raise
+        #         raise ImportError(msg)
 
     return module
 
@@ -205,16 +205,16 @@ def import_dependency_safe(
 #         return super().send(request, **kwargs)
 
 
-def check_CV_version():
-    """
-    ## check_CV_version
-
-    **Returns:** OpenCV's version first bit
-    """
-    if LooseVersion(cv2.__version__) >= LooseVersion("4"):
-        return 4
-    else:
-        return 3
+# def check_CV_version():
+#     """
+#     ## check_CV_version
+#
+#     **Returns:** OpenCV's version first bit
+#     """
+#     if LooseVersion(cv2.__version__) >= LooseVersion("4"):
+#         return 4
+#     else:
+#         return 3
 
 
 def check_open_port(address, port=22):
