@@ -1,12 +1,13 @@
 # -- coding: utf-8 --
 # @Time : 2021/12/7
-# @LastEdit : 2025/6/9
+# @LastEdit : 2025/12/17
 # @Author : ykk648
 
 import time
 import uuid
-import numpy as np
 from multiprocessing import shared_memory
+
+import numpy as np
 
 # Global registry to track all shared memory objects
 _shared_memory_registry = set()
@@ -83,8 +84,9 @@ class CVQueue:
         for i in range(self.queue_length):
             self.index_shm[i] = 'None'
 
-    def push(self, push_buffer, aim_format=None):
-        assert isinstance(push_buffer, bytes), 'push_buffer must be bytes'
+    def put(self, push_buffer, convert_byte=False):
+        if convert_byte:
+            push_buffer = push_buffer.tobytes()
 
         while True:
             self.push_buffer_len = len(push_buffer)

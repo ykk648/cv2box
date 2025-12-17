@@ -1,6 +1,6 @@
 # -- coding: utf-8 --
 # @Time : 2024/4/12
-# @LastEdit : 2025/4/25
+# @LastEdit : 2025/12/17
 # @Author : ykk648
 
 import os
@@ -146,16 +146,59 @@ class MyTimer(object):
     def __exit__(self, exc_type, exc_val, exc_tb):
         print(f'[RUN {self.show_name} finished, spent time: {"{:.2f}".format(time.time() - self.t0)}s]')
 
+class MyFpsCounter:
+    """
+    一个上下文管理器，用于计算并打印平均FPS。
+    它会在每 N 次调用后打印一次结果。
 
-class MyFpsCounter(object, ):
-    def __init__(self, flag='temp'):
+    用法:
+        fps_counter = AvgFpsCounter(flag='MyTask', report_interval=100)
+        for i in range(1000):
+            with fps_counter:
+                # 执行你的耗时操作，例如模型推理
+                time.sleep(0.04) # 模拟 25 FPS
+    """
+
+    def __init__(self, flag='temp', report_interval=100):
+        """
+        初始化平均FPS计数器。
+
+        Args:
+            flag (str): 显示在打印信息中的标签。
+            report_interval (int): 每隔多少次调用打印一次FPS报告。
+        """
         self.flag = flag
+        self.report_interval = report_interval
+        self.call_count = 0
+        self.batch_start_time = None
 
     def __enter__(self):
-        self.t0 = time.time()
+        # 仅在批次的第一次调用时记录开始时间
+        if self.call_count == 0:
+            self.batch_start_time = time.perf_counter()
+
+        # 对于单次调用的开始，不需要做任何事
+        return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        print('[{} fps: {fps}]'.format(self.flag, fps=1 / (time.time() - self.t0)))
+        self.call_count += 1
+        # 检查是否达到了报告的间隔
+        if self.call_count >= self.report_interval:
+            # 计算总耗时
+            total_duration = time.perf_counter() - self.batch_start_time
+
+            # 计算平均FPS
+            # 避免除以零的错误
+            if total_duration > 0:
+                avg_fps = self.report_interval / total_duration
+            else:
+                avg_fps = float('inf')
+
+            # 打印格式化的报告
+            print(f'[{self.flag} avg fps over {self.report_interval} calls: {avg_fps:.2f}]')
+
+            # 重置计数器，为下一个批次做准备
+            self.call_count = 0
 
 
 def mfc(flag='Your Func Name'):
